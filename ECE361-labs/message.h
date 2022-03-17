@@ -24,6 +24,11 @@ enum messageType{
     QU_ACK
 };
 
+//***************************************************************************
+//need helper functions to turn packet(struct used in last labs) into message(required struct of this lab)
+
+
+
 //the structure for messages in the conference lab
 typedef struct Message{
     unsigned int type;  //refers to messageType
@@ -40,13 +45,12 @@ typedef struct packet{
     char filedata[max_package_size];
 }Packet;
 
+FILE* FD = NULL;
 //This is the helper function that parse the recieved message into packet,
 //it will create a new file if the message is the first one and close file after the last message
 int packet_from_message(char* message, int prev_index){
     //first use strtok function to break up the message header
     //referred to this tutorial https://www.cplusplus.com/reference/cstring/strtok/
-    FILE* FD = NULL;
-
     const char breaker[2] = ":";
     char* total_frag = strtok(message, breaker);
     char* frag_no = strtok(NULL, breaker); //use null to continue scanning
