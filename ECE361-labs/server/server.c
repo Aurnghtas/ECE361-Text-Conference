@@ -93,6 +93,7 @@ void handle_message_type(Message* msg, int cFd){
             }
         }
         close(cFd); //simply delete this client Fd from the set
+        printf("Successfully close the cFd at line 96\n");
     }
 
 }
@@ -178,6 +179,7 @@ int main(int argc, char *argv[]){
                 //if ready, then read
                 if(FD_ISSET(cFd, &FD_sets)){
                     //printf("%d\n",cFd);
+                    memset(buffer, '\0', MAX_MSG_TO_STRING);
                     num_Byte_recieved = recv(cFd, buffer, MAX_MSG_TO_STRING, 0); //read
                     printf("line 181: %s\n", buffer);
                     if(num_Byte_recieved == -1){
@@ -206,9 +208,10 @@ int main(int argc, char *argv[]){
 
             //after connection, recieve message
             int num_Byte_recieved = 0;
+            memset(buffer, '\0', MAX_MSG_TO_STRING);
             num_Byte_recieved = recv(newFd, buffer, MAX_MSG_TO_STRING, 0); //read
-            printf("line 208: %d\n", newFd);
-            printf("line 209: %s\n", buffer);
+            printf("line 213: %d\n", newFd);
+            printf("line 214: %s\n", buffer);
             if(num_Byte_recieved == -1){
                 printf("Fails to receive message 2\n");
                 exit(1);
