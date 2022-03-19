@@ -1,4 +1,4 @@
-#include "message.h"
+#include "../message.h"
 #include <stdbool.h>
 #include <sys/types.h>
 #include <sys/socket.h>
