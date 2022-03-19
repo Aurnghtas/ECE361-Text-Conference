@@ -178,8 +178,9 @@ int main(int argc, char *argv[]){
                 if(FD_ISSET(cFd, &FD_sets)){
                     //printf("%d\n",cFd);
                     num_Byte_recieved = recv(cFd, buffer, MAX_MSG_TO_STRING, 0); //read
+                    printf("line 181: %s\n", buffer);
                     if(num_Byte_recieved == -1){
-                        printf("Fails to receive message\n");
+                        printf("Fails to receive message 1\n");
                         exit(1);
                     }
 
@@ -204,8 +205,10 @@ int main(int argc, char *argv[]){
             //after connection, recieve message
             int num_Byte_recieved = 0;
             num_Byte_recieved = recv(newFd, buffer, MAX_MSG_TO_STRING, 0); //read
+            printf("line208 %d\n", newFd);
+            printf("line 209: %s\n", buffer);
             if(num_Byte_recieved == -1){
-                printf("Fails to receive message\n");
+                printf("Fails to receive message 2\n");
                 exit(1);
             }
 

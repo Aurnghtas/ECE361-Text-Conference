@@ -112,6 +112,7 @@ int main(int argc, char *argv[]) {
             msg.size = strlen(msg.data);
             messageToStrings(msg, msg_buffer);
 
+            printf("Sending msg_buffer to the server: %s\n", msg_buffer);
             if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
                 printf("Error in sending the LOGIN Message to the server\n");
                 continue;
@@ -190,7 +191,7 @@ int main(int argc, char *argv[]) {
 
         /* quit command */
         else if(strcmp(command, quit)==0) {
-            print("Terminating the program!\n");
+            printf("Terminating the program!\n");
             break;
         } 
 

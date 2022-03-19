@@ -33,7 +33,7 @@ typedef struct message{
 
 // helper function converts Message to strings with size MAX_MSG_TO_STRING
 void messageToStrings(Message message, char* buffer) {
-    int num_char = sprintf(buffer, "%d:%d:%s:%s:", message.type, message.size, message.source, message.data);
+    int num_char = sprintf(buffer, "%d:%d:%s:%s", message.type, message.size, message.source, message.data);
     if(num_char<0) {
         printf("Error in messageToStrings\n");
     }
@@ -46,6 +46,6 @@ Message stringsToMessage(char* buffer) {
     message.type = atoi(strtok(buffer, breaker));
     message.size = atoi(strtok(NULL, breaker)); //use null to continue scanning
     strcpy(message.source, strtok(NULL, breaker));
-    strcpy(message.data, strtok(NULL, breaker));
+    strcpy(message.data, strtok(NULL, "\n"));
     return message;
 }
