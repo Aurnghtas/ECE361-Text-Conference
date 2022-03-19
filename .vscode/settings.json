@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "types.h": "c",
+        "pthread.h": "c",
+        "system_error": "c"
     }
 }
