@@ -10,7 +10,6 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <../message.h>
 
 #define MAX_INPUT_LEN 1024
 
