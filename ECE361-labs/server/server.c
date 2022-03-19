@@ -197,7 +197,8 @@ int main(int argc, char *argv[]){
             int newFd = 0;
             struct sockaddr_storage cAddr;
             socklen_t addrSize = sizeof(cAddr);
-            if(newFd = accept(initialFd, (struct sockaddr *)&cAddr, &addrSize) < 0){
+            newFd = accept(initialFd, (struct sockaddr *)&cAddr, &addrSize);
+            if(newFd < 0){
                 perror("Fails to accept new connection\n");
                 exit(1);
             }
