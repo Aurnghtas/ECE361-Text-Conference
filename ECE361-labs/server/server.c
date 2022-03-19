@@ -38,9 +38,9 @@ void handle_message_type(Message* msg, int cFd){
                 //identified client and correct password
                 if(connected[i]){
                     //this client is already connected
-                    char* replydata = "You are already logged in!\n";
+                    char* replydata = "You are already logged in!";
                     strcpy(replyMsg.data, replydata);
-                    replyMsg.size = strlen(replydata);
+                    replyMsg.size = strlen(replyMsg.data);
                     strcpy(replyMsg.source, msg->source);
                     replyMsg.type = LO_NAK;
                     messageToStrings(replyMsg, reply_buffer);
@@ -52,35 +52,36 @@ void handle_message_type(Message* msg, int cFd){
                     //not already connected
                     clientFds[i] = cFd; //register the corresponding socket
                     connected[i] = true; //mark it as connected
-                    char* replydata = "Log in success!\n";
+                    char* replydata = "Log in success!";
                     strcpy(replyMsg.data, replydata);
-                    replyMsg.size = strlen(replydata);
+                    replyMsg.size = strlen(replyMsg.data);
                     strcpy(replyMsg.source, msg->source);
                     replyMsg.type = LO_ACK;
                     messageToStrings(replyMsg, reply_buffer);
-                    if(send(cFd, reply_buffer, strlen(reply_buffer), 0) == -1){
+                    printf("line 61: %s\n", reply_buffer);
+                    if(send(cFd, reply_buffer, strlen(reply_buffer)+1, 0) == -1){
                         printf("Error in sending the Message to the client\n");
                         exit(1);
                     }
                 }
             }
-            char* replydata;
-            if(!inlist){
-                replydata = "Not identified in the client list!\n";
-                strcpy(replyMsg.data, replydata);
-            }
-            if(!pwdright){
-                replydata = "Incorrect password!\n";
-                strcpy(replyMsg.data, replydata);
-            }
-            replyMsg.size = strlen(replydata);
-            strcpy(replyMsg.source, msg->source);
-            replyMsg.type = LO_NAK;
-            messageToStrings(replyMsg, reply_buffer);
-            if(send(cFd, reply_buffer, strlen(reply_buffer), 0) == -1){
-                printf("Error in sending the Message to the client\n");
-                exit(1);
-            }   
+            // char* replydata;
+            // if(!inlist){
+            //     replydata = "Not identified in the client list!\n";
+            //     strcpy(replyMsg.data, replydata);
+            // }
+            // if(!pwdright){
+            //     replydata = "Incorrect password!\n";
+            //     strcpy(replyMsg.data, replydata);
+            // }
+            // replyMsg.size = strlen(replydata);
+            // strcpy(replyMsg.source, msg->source);
+            // replyMsg.type = LO_NAK;
+            // messageToStrings(replyMsg, reply_buffer);
+            // if(send(cFd, reply_buffer, strlen(reply_buffer), 0) == -1){
+            //     printf("Error in sending the Message to the client\n");
+            //     exit(1);
+            // }   
         }
     }else if(Type == EXIT){
         char *cId = msg->source;
@@ -145,8 +146,8 @@ int main(int argc, char *argv[]){
     fd_set FD_sets;
     int maxFd = -1;
     //the recieve buffer
-    char buffer[MAX_MSG_TO_STRING];
     while(1){
+        char buffer[MAX_MSG_TO_STRING];
         FD_ZERO(&FD_sets); //clear set, initialize
         FD_SET(initialFd, &FD_sets); //add the current fd to set
         maxFd = initialFd;
@@ -206,7 +207,7 @@ int main(int argc, char *argv[]){
             //after connection, recieve message
             int num_Byte_recieved = 0;
             num_Byte_recieved = recv(newFd, buffer, MAX_MSG_TO_STRING, 0); //read
-            printf("line208 %d\n", newFd);
+            printf("line 208: %d\n", newFd);
             printf("line 209: %s\n", buffer);
             if(num_Byte_recieved == -1){
                 printf("Fails to receive message 2\n");
@@ -217,8 +218,10 @@ int main(int argc, char *argv[]){
 
             Message msg;
             msg = stringsToMessage(buffer); //parse the buffer(char *) into struct message
+            printf("line 220: %d, %d, %s, %s\n", msg.type, msg.size, msg.source, msg.data);
 
             handle_message_type(&msg, newFd);
+            printf("now we are at line 223\n");
         }
 
     }

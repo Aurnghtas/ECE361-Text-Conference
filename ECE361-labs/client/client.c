@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     int socketfd = -2;
     bool logged_in = false; // whether the client logs in or not
     bool in_session = false; // whether the client joins a conference session or not
-    char *client_ID; // current client's id
+    char curr_ID[100];
 
     while(true){
         Message msg;
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-            char *pwd, *server_IP, *server_port;
+            char *client_ID, *pwd, *server_IP, *server_port;
 
             /* invalid usage of login */
             if((client_ID = strtok(NULL, " "))==NULL){
@@ -75,6 +75,9 @@ int main(int argc, char *argv[]) {
                 printf("Usage for login: /login <client ID> <password> <server-IP> <server-port>\n");
                 continue;
             }
+
+            strcpy(curr_ID, client_ID);
+            printf("at line 80 %s\n",curr_ID);
 
             /*!!!!!!!!!!!!!!!! Only For Debug Purpose !!!!!!!!!!!!!!!!*/
             printf("inside login command, we have %s %s %s %s\n", client_ID, pwd, server_IP, server_port);
@@ -119,10 +122,11 @@ int main(int argc, char *argv[]) {
             }
 
             /* receive ack from the server */
-            int num_bytes_recv = recv(socketfd, recv_buffer, strlen(recv_buffer), 0);
+            int num_bytes_recv = recv(socketfd, recv_buffer, MAX_MSG_TO_STRING, 0);
             if(num_bytes_recv==-1) {
                 printf("Error in receiving ack for LOGIN Message from the server\n");
             }
+            printf("line 126: %s\n", recv_buffer);
 
             recv_buffer[num_bytes_recv] = '\0'; // add the string terminator to the buffer
 
@@ -141,6 +145,7 @@ int main(int argc, char *argv[]) {
 
         /* logout command */
         else if(strcmp(command, logout)==0) {
+            printf("now we are in logout!\n");
             if(socketfd==-2 && logged_in==false) {
                 printf("You have not logged in yet, please log in first\n");
                 continue;
@@ -148,10 +153,12 @@ int main(int argc, char *argv[]) {
 
             /* send logout Message to the server */
             msg.type = EXIT;
-            msg.size = 0;
-            strcpy(msg.source, client_ID);
-            memset(msg.data, '\0', sizeof(char)*MAX_DATA);
+            strcpy(msg.source, curr_ID);
+            printf("%s\n"), curr_ID;
+            strcpy(msg.data, " \0");
+            msg.size = strlen(msg.data);
             messageToStrings(msg, msg_buffer);
+            printf("line 161: %s\n", msg_buffer);
 
             if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
                 printf("Error in sending the LOGOUT Message to the server\n");
@@ -165,6 +172,7 @@ int main(int argc, char *argv[]) {
             // }
 
             close(socketfd);
+            printf("now we are at line 169\n");
             socketfd=-2;
             logged_in = false;
         } 
@@ -200,10 +208,9 @@ int main(int argc, char *argv[]) {
 
         }
 
-        return 0;
-
     }
 
+    return 0;
     // /*!!!!!!!!!!!!!!!! Only For Debug Purpose !!!!!!!!!!!!!!!!*/
     // printf("\n");
 
