@@ -13,6 +13,7 @@
 
 //globals here
 const char* clients[] = {"Tom", "Jack", "Albert", "Mom", "Dad"};
+bool active[] = {false, false, false, false, false};
 
 int main(int argc, char *argv[]){
     //called in the format server <UDP listen port>
@@ -49,4 +50,13 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
+    if(listen(serv_fd, 10) == -1){ //maximum 10 pending requests
+        printf("Fails to listen to connections\n");
+        return -1;
+    }
+
+    //start serving
+    while(1){
+
+    }
 }
