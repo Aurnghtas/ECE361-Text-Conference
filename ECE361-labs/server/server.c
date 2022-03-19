@@ -89,6 +89,7 @@ void handle_message_type(Message* msg, int cFd){
         for(int i = 0;i < 5;i++){
             if(strcmp(clients[i], cId) == 0){
                 connected[i] = false;
+                clientFds[i] = -1;
                 //sessions[i] = NULL;
             }
         }
