@@ -12,8 +12,6 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-char strnew[100];
-
 typedef struct session{
     char *name;
 }Session; 
@@ -25,7 +23,7 @@ const char* passwords[] = {"123", "234", "345", "456", "567"}; //corresponding c
 bool connected[] = {false, false, false, false, false}; 
 int clientFds[] = {-1, -1, -1, -1, -1}; //record the corresponding client fds
 char *joined[] = {NULL, NULL, NULL, NULL, NULL}; //points to the session the client joins, NULL for not joining any
-
+char strnew[5][100];
 
 //this is the helper function that checks the type of command recieved and do corresponding things
 void handle_message_type(Message* msg, int cFd){
@@ -117,7 +115,7 @@ void handle_message_type(Message* msg, int cFd){
 
         //session is there, join in
         if(found){
-            joined[whichOne] = strnew;
+            joined[whichOne] = strnew[whichOne];
             strcpy(joined[whichOne], name);
 
             char* replydata = name; //data field is the session id joined
@@ -201,7 +199,7 @@ void handle_message_type(Message* msg, int cFd){
                 //if session does not exit yet
                 printf("line 199\n");
                 if(joined[i] == NULL){
-                    joined[i] = strnew;
+                    joined[i] = strnew[i];
                     strcpy(joined[i], sessionId);
                     printf("line 202: %s\n", joined[i]);
                     char* replydata = ("Created new session %s!", sessionId);
