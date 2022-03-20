@@ -1,4 +1,5 @@
 CC=gcc
+LDFLAGS=-pthread
 all: server/server client/client
 server: server/server.o
 client: client/client.o

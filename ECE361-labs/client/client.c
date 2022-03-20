@@ -10,6 +10,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 #define MAX_INPUT_LEN 1024
 
@@ -24,6 +25,70 @@ const char *createsession = "/createsession";
 const char *list = "/list";
 const char *quit = "/quit";
 
+/********************
+ * Global Variables *
+ ********************/
+bool in_session = false; // whether the client joins a conference session or not
+char curr_session[100]; // current session the client is in
+
+/*******************************************************
+ *      this is the function run by a new thread       *
+ * all it does is to wait for messages from the server *
+ * *****************************************************/
+void *receive_thread_start(void *fd) {
+    int *socketfd = (int *)fd;
+
+    /* we have 7 types of message - LO_ACK, LO_NAK, JN_ACK, JN_NAK, NS_ACK, MESSAGE, QU_ACK *
+     * but LO_ACK and LO_NAK are used by the main thread to verify the socketfd -> 5 types left */
+
+    Message recv_msg_2;
+    char recv_buffer_2[MAX_MSG_TO_STRING];
+
+    while(true) {
+        int num_bytes_recv_2 = recv(*socketfd, recv_buffer_2, MAX_MSG_TO_STRING, 0);
+        if(num_bytes_recv_2==-1) {
+            printf("Error in receiving acks from the server in receive thread\n");
+            break;
+        }
+
+        recv_buffer_2[num_bytes_recv_2] = '\0'; // add the string terminator to the buffer
+
+        recv_msg_2 = stringsToMessage(recv_buffer_2);
+
+        if(recv_msg_2.type==JN_ACK) {
+            printf("Successfully join session %s\n", recv_msg_2.data);
+            in_session = true;
+            strcpy(curr_session, recv_msg_2.data); 
+        }
+
+        else if(recv_msg_2.type==JN_NAK) {
+            printf("Failed to create session %s, please retry\n", recv_msg_2.data);
+        }
+
+        else if(recv_msg_2.type==NS_ACK) {
+            printf("Successfully create session %s\n", recv_msg_2.data);
+            in_session = true;
+            strcpy(curr_session, recv_msg_2.data);
+        }
+
+        else if(recv_msg_2.type==MESSAGE) {
+            printf("%s: %s\n", recv_msg_2.source, recv_msg_2.data);
+        }
+
+        else if(recv_msg_2.type==QU_ACK) {
+            printf("Following are the users and sessions online\n");
+            printf("%s\n", recv_buffer_2);
+        }
+
+        else {
+            printf("Can NOT identify the message type!\n");
+        }
+        
+    }
+
+    return 0;
+}
+
 /*************************************************************************** 
  * some parts of the code are cited from https://beej.us/guide/bgnet/html/ *
  ***************************************************************************/
@@ -37,10 +102,10 @@ int main(int argc, char *argv[]) {
     char *command;
     int socketfd = -2;
     bool logged_in = false; // whether the client logs in or not
-    bool in_session = false; // whether the client joins a conference session or not
-    char curr_ID[100];
+    char curr_ID[100]; // current client who is using the program
+    pthread_t receive_thread;
 
-    while(true){
+    while(true) {
         Message msg;
         char msg_buffer[MAX_MSG_TO_STRING]; // buffer for converting Message to strings
         Message recv_msg;
@@ -49,7 +114,9 @@ int main(int argc, char *argv[]) {
         fgets(user_input, MAX_INPUT_LEN, stdin); // gets the user input
         command = strtok(user_input, " ");
 
-        /* login command */
+        /*****************
+         * login command *
+         *****************/
         if(strcmp(command, login)==0) {
             if(socketfd!=-2) {
                 printf("An client ID is already in use, please quit the previous client ID first\n");
@@ -76,7 +143,7 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-            strcpy(curr_ID, client_ID);
+            strcpy(curr_ID, client_ID); // save client_ID in curr_ID for future reference
             printf("at line 80 %s\n",curr_ID);
 
             /*!!!!!!!!!!!!!!!! Only For Debug Purpose !!!!!!!!!!!!!!!!*/
@@ -135,6 +202,7 @@ int main(int argc, char *argv[]) {
             if(recv_msg.type==LO_ACK) {
                 printf("Successfully log in with %s\n", client_ID);
                 logged_in = true;
+                pthread_create(&receive_thread, NULL, receive_thread_start, (void *)&socketfd);
             } else if(recv_msg.type=LO_NAK) {
                 printf("Failed to log in with %s, reason: %s\n", client_ID, recv_msg.data);
                 close(socketfd);
@@ -143,7 +211,9 @@ int main(int argc, char *argv[]) {
 
         } 
 
-        /* logout command */
+        /******************
+         * logout command *
+         ******************/
         else if(strcmp(command, logout)==0) {
             printf("now we are in logout!\n");
             if(socketfd==-2 && logged_in==false) {
@@ -171,47 +241,251 @@ int main(int argc, char *argv[]) {
             //     printf("Error in receiving the Message from the server\n");
             // }
 
+            int rv = pthread_cancel(receive_thread);
+            if(rv==0) {
+                printf("Successfully shutdown the receive thread\n");
+            } else {
+                printf("NOT successfully shutdown the receive thread\n");
+            }
+            
             close(socketfd);
             printf("now we are at line 169\n");
             socketfd=-2;
             logged_in = false;
         } 
 
-        /* joinsession command */
+        /***********************
+         * joinsession command *
+         ***********************/
         else if(strcmp(command, joinsession)==0) {
+            if(logged_in==false) {
+                printf("Please log in first before joining a conference session\n");
+                continue;
+            } 
 
+            if(in_session==true) {
+                printf("Please leave your current conference session to join a new one\n");
+                continue;
+            }
+
+            if(logged_in==true && in_session==false) {
+                char *session_ID;
+
+                if((session_ID = strtok(NULL, "\n"))==NULL){
+                    printf("Usage for join session: /joinsession <session ID>\n");
+                    continue;
+                }
+
+                //strcpy(curr_session, session_ID); // store session ID for future reference
+
+                msg.type = JOIN;
+                strcpy(msg.source, curr_ID);
+                strcpy(msg.data, session_ID);
+                msg.size = strlen(msg.data);
+                messageToStrings(msg, msg_buffer);
+
+                if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
+                    printf("Error in sending the joinsession Message to the server\n");
+                    continue;
+                }
+
+                // /* receive ack from the server */
+                // int num_bytes_recv = recv(socketfd, recv_buffer, MAX_MSG_TO_STRING, 0);
+                // if(num_bytes_recv==-1) {
+                //     printf("Error in receiving ack for joinsession Message from the server\n");
+                //     continue;
+                // }
+
+                // recv_buffer[num_bytes_recv] = '\0'; // add the string terminator to the buffer
+
+                // recv_msg = stringsToMessage(recv_buffer);
+                
+                // if(recv_msg.type==JN_ACK) {
+                //     printf("Successfully join session %s\n", session_ID);
+                //     strcpy(curr_session, session_ID); // store session ID for future reference
+                //     in_session = true;
+                // } else if(recv_msg.type==JN_NAK) {
+                //     printf("Failed to create session %s, please retry\n", session_ID);
+                // }
+                
+            }
         } 
 
-        /* leavesession command */
+        /************************
+         * leavesession command *
+         ************************/
         else if(strcmp(command, leavesession)==0) {
-            
+            if(logged_in==false) {
+                printf("Please log in first before leaving a conference session\n");
+                continue;
+            } 
+
+            if(in_session==false) {
+                printf("Please join a conference session before you can leave\n");
+                continue;
+            }
+
+            if(logged_in==true && in_session==true) {
+                msg.type = LEAVE_SESS;
+                strcpy(msg.source, curr_ID);
+                strcpy(msg.data, " \0");
+                msg.size = strlen(msg.data);       
+                messageToStrings(msg, msg_buffer);
+
+                if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
+                    printf("Error in sending the leavesession Message to the server\n");
+                    continue;
+                }
+                
+                in_session==false;
+                
+            }
         } 
 
-        /* createsession command */
+        /*************************
+         * createsession command *
+         *************************/
         else if(strcmp(command, createsession)==0) {
-            
+            if(logged_in==false) {
+                printf("Please log in first before creating a conference session\n");
+                continue;
+            } 
+
+            if(in_session==true) {
+                printf("Please leave your current conference session to create and join a new one\n");
+                continue;
+            }
+
+            if(logged_in==true && in_session==false) {
+                char *session_ID;
+
+                if((session_ID = strtok(NULL, "\n"))==NULL){
+                    printf("Usage for create session: /createsession <session ID>\n");
+                    continue;
+                }
+
+                msg.type = NEW_SESS;
+                strcpy(msg.source, curr_ID);
+                strcpy(msg.data, session_ID);
+                msg.size = strlen(msg.data);
+                messageToStrings(msg, msg_buffer);
+
+                if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
+                    printf("Error in sending the createsession Message to the server\n");
+                    continue;
+                }
+
+                // /* receive ack from the server */
+                // int num_bytes_recv = recv(socketfd, recv_buffer, MAX_MSG_TO_STRING, 0);
+                // if(num_bytes_recv==-1) {
+                //     printf("Error in receiving ack for createsession Message from the server\n");
+                //     continue;
+                // }
+
+                // recv_buffer[num_bytes_recv] = '\0'; // add the string terminator to the buffer
+
+                // recv_msg = stringsToMessage(recv_buffer);
+                
+                // if(recv_msg.type==NS_ACK) {
+                //     printf("Successfully create session %s\n", session_ID);
+                //     strcpy(curr_session, session_ID); // store session ID for future reference
+                //     in_session = true;
+                // } else {
+                //     printf("Failed to create session %s, please retry\n", session_ID);
+                // }
+                
+            }
+
         } 
 
-        /* list command */
+        /****************
+         * list command *
+         ****************/
         else if(strcmp(command, list)==0) {
-            
+            msg.type = QUERY;
+            strcpy(msg.source, " \0");
+            strcpy(msg.data, " \0");
+            msg.size = strlen(msg.data);
+            messageToStrings(msg, msg_buffer);
+
+            if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
+                printf("Error in sending the list Message to the server\n");
+                continue;
+            }
+
+            // /* receive ack from the server */
+            // int num_bytes_recv = recv(socketfd, recv_buffer, MAX_MSG_TO_STRING, 0);
+            // if(num_bytes_recv==-1) {
+            //     printf("Error in receiving ack for createsession Message from the server\n");
+            //     continue;
+            // }
+
+            // recv_buffer[num_bytes_recv] = '\0'; // add the string terminator to the buffer
+
+            // recv_msg = stringsToMessage(recv_buffer);
+
+            // if(recv_msg.type==QU_ACK) {
+            //     printf("Following are the users and sessions online");
+            //     printf("%s\n", recv_buffer);
+            // } else {
+            //     printf("Failed to list the users and sessions online");
+            // }
+
         } 
 
-        /* quit command */
+        /******************************************************************
+         * quit command - exit the conference, then terminate the program *
+         ******************************************************************/
         else if(strcmp(command, quit)==0) {
             printf("Terminating the program!\n");
+
+            if(socketfd==-2 && logged_in==false) {
+                break;
+            }
+
+            /* send logout Message to the server first */
+            msg.type = EXIT;
+            strcpy(msg.source, curr_ID);
+            printf("%s\n"), curr_ID;
+            strcpy(msg.data, " \0");
+            msg.size = strlen(msg.data);
+            messageToStrings(msg, msg_buffer);
+
+            if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
+                printf("Error in sending the LOGOUT Message to the server\n");
+            }
+
+            close(socketfd);
             break;
         } 
 
-        /* text - not a command */
+        /************************
+         * text - not a command *
+         ************************/
         else {
+            if(logged_in==false) {
+                printf("Please log in first before sending messages\n");
+                continue;
+            } 
 
+            if(in_session==false) {
+                printf("Please join a session first before sending messages\n");
+                continue;
+            }
+
+            msg.type = MESSAGE;
+            strcpy(msg.source, curr_ID);
+            strcpy(msg.data, user_input);
+            msg.size = strlen(msg.data);
+            messageToStrings(msg, msg_buffer);
+
+            if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
+                printf("Error in sending the LOGOUT Message to the server\n");
+            }
         }
 
     }
 
     return 0;
-    // /*!!!!!!!!!!!!!!!! Only For Debug Purpose !!!!!!!!!!!!!!!!*/
-    // printf("\n");
 
 }
