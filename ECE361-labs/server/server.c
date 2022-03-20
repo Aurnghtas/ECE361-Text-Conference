@@ -222,6 +222,7 @@ void handle_message_type(Message* msg, int cFd){
             } 
         }
     }else if(Type == QUERY){
+        printf("Now the message type is QUERY\n");
         char replydata[MAX_MSG_TO_STRING];
         memset(replydata, 0, sizeof(replydata));
         for(int i = 0;i < 5;i++){ 
@@ -238,6 +239,7 @@ void handle_message_type(Message* msg, int cFd){
         strcpy(replyMsg.source, msg->source);
         replyMsg.type = QU_ACK;
         messageToStrings(replyMsg, reply_buffer);
+        printf("line 242: reply_buffer");
         if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
             printf("Error in sending the Message to the client\n");
             exit(1);
