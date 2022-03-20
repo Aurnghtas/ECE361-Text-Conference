@@ -166,6 +166,25 @@ void handle_message_type(Message* msg, int cFd){
         Session *newSession = (Session *)malloc(sizeof(Session));
         strcpy(newSession->name, sessionId);
 
+        //check if session already exits
+        bool exists = false;
+        for(int i = 0;i < 5;i++){
+            if(strcmp(sessionId, joined[i]->name) == 0){
+                exists = true;
+            }
+        }
+        if(exists){
+            char* replydata = ("Session %s already exist!", sessionId);        
+            strcpy(replyMsg.data, replydata);
+            replyMsg.size = strlen(replyMsg.data);
+            strcpy(replyMsg.source, msg->source);
+            replyMsg.type = NS_ACK;
+            messageToStrings(replyMsg, reply_buffer);
+            if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                printf("Error in sending the Message to the client\n");
+                exit(1);
+            }
+        }
         for(int i = 0;i < 5;i++){
             //find the client to start new session
             if(strcmp(clients[i], clientId) == 0){
@@ -173,17 +192,6 @@ void handle_message_type(Message* msg, int cFd){
                 if(joined[i] == NULL){
                     joined[i] = newSession;
                     char* replydata = ("Created new session %s!", sessionId);
-                    strcpy(replyMsg.data, replydata);
-                    replyMsg.size = strlen(replyMsg.data);
-                    strcpy(replyMsg.source, msg->source);
-                    replyMsg.type = NS_ACK;
-                    messageToStrings(replyMsg, reply_buffer);
-                    if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
-                        printf("Error in sending the Message to the client\n");
-                        exit(1);
-                    }
-                }else if(strcmp(sessionId, joined[i]->name) == 0){
-                    char* replydata = ("Session %s already exist!", sessionId);        
                     strcpy(replyMsg.data, replydata);
                     replyMsg.size = strlen(replyMsg.data);
                     strcpy(replyMsg.source, msg->source);
