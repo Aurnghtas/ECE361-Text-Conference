@@ -147,7 +147,7 @@ void handle_message_type(Message* msg, int cFd){
             if(strcmp(clients[i], clientId) == 0){
                 if(joined[i]){
                     joined[i] = NULL;
-                    char* replydata = "Session left";
+                    /*char* replydata = "Session left";
                     strcpy(replyMsg.data, replydata);
                     replyMsg.size = strlen(replyMsg.data);
                     strcpy(replyMsg.source, msg->source);
@@ -156,7 +156,7 @@ void handle_message_type(Message* msg, int cFd){
                     if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
                         printf("Error in sending the Message to the client\n");
                         exit(1);
-                    }
+                    }*/
                 }
             }
         }
