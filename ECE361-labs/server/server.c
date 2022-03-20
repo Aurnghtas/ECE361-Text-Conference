@@ -95,7 +95,7 @@ void handle_message_type(Message* msg, int cFd){
             if(strcmp(clients[i], cId) == 0){
                 connected[i] = false;
                 clientFds[i] = -1;
-                //sessions[i] = NULL;
+                joined[i] = NULL;
             }
         }
         close(cFd); //simply delete this client Fd from the set
@@ -108,6 +108,12 @@ void handle_message_type(Message* msg, int cFd){
         for(int i = 0;i < 5;i++){
             if(joined[i] && (strcmp(name, joined[i]) == 0)){
                 found = true; //find that there's already someone joined in the session
+                break;
+            }
+        }
+
+        for(int i = 0;i < 5;i++){
+            if(strcmp(clients[i], cId) == 0){
                 whichOne = i;
                 break;
             }
@@ -216,8 +222,9 @@ void handle_message_type(Message* msg, int cFd){
             }
         }
     }else if(Type == MESSAGE){
+        printf("line 225: now we are dealing with messages\n");
         char *clientId = msg->source;
-        char *wantedsession = NULL;
+        char wantedsession[100];
         //first, find out which session the message need to go
         for(int i = 0;i < 5;i++){
             if(connected[i] && strcmp(clients[i], clientId) == 0){
@@ -225,15 +232,16 @@ void handle_message_type(Message* msg, int cFd){
                 break;
             }
         }
+        printf("line 235: now wo want to send session %s to all clients\n", wantedsession);
         //send to all clients in this session
         for(int i = 0;i < 5;i++){
-            if(connected[i] && (strcmp(joined[i], wantedsession)==0)) {
+            if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) && (strcmp(clients[i], clientId)!=0)) {
                 strcpy(replyMsg.data, msg->data);
                 replyMsg.size = strlen(replyMsg.data);
                 strcpy(replyMsg.source, msg->source);
                 replyMsg.type = MESSAGE;
                 messageToStrings(replyMsg, reply_buffer);
-                if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                if(send(clientFds[i], reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }

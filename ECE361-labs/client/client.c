@@ -103,6 +103,7 @@ int main(int argc, char *argv[]) {
     }
 
     char user_input[MAX_INPUT_LEN];
+    char users_message[MAX_INPUT_LEN];
     char *command;
     int socketfd = -2;
     bool logged_in = false; // whether the client logs in or not
@@ -116,6 +117,7 @@ int main(int argc, char *argv[]) {
         char recv_buffer[MAX_MSG_TO_STRING]; // buffer for receiving strings from the server
         memset(user_input, '\0', sizeof(char)*MAX_INPUT_LEN);
         fgets(user_input, MAX_INPUT_LEN, stdin); // gets the user input
+        strcpy(users_message, user_input);
         command = strtok(user_input, " ");
 
         /*****************
@@ -341,7 +343,7 @@ int main(int argc, char *argv[]) {
                     continue;
                 }
                 
-                in_session==false;
+                in_session=false;
                 
             }
         } 
@@ -450,7 +452,6 @@ int main(int argc, char *argv[]) {
             /* send logout Message to the server first */
             msg.type = EXIT;
             strcpy(msg.source, curr_ID);
-            printf("%s\n"), curr_ID;
             strcpy(msg.data, " \0");
             msg.size = strlen(msg.data);
             messageToStrings(msg, msg_buffer);
@@ -479,7 +480,7 @@ int main(int argc, char *argv[]) {
 
             msg.type = MESSAGE;
             strcpy(msg.source, curr_ID);
-            strcpy(msg.data, user_input);
+            strcpy(msg.data, users_message);
             msg.size = strlen(msg.data);
             messageToStrings(msg, msg_buffer);
 
