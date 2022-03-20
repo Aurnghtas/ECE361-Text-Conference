@@ -177,7 +177,7 @@ void handle_message_type(Message* msg, int cFd){
                 break;
             }
         }
-        printf("line 178\n");
+        printf("line 180: %d\n",exists);
         if(exists){
             char* replydata = ("Session %s already exist!", sessionId);        
             strcpy(replyMsg.data, replydata);
@@ -196,8 +196,10 @@ void handle_message_type(Message* msg, int cFd){
             //find the client to start new session
             if(strcmp(clients[i], clientId) == 0){
                 //if session does not exit yet
+                printf("line 199\n");
                 if(joined[i] == NULL){
                     strcpy(joined[i], sessionId);
+                    printf("line 202: %s\n", joined[i]);
                     char* replydata = ("Created new session %s!", sessionId);
                     strcpy(replyMsg.data, replydata);
                     replyMsg.size = strlen(replyMsg.data);
