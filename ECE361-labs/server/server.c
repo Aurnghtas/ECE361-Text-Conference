@@ -12,12 +12,17 @@
 #include <unistd.h>
 #include <sys/select.h>
 
+typedef struct session{
+    char *name;
+}Session; 
+
 //globals here, allows 5 users at a time
 const char* clients[] = {"Tom", "Jack", "Albert", "Mom", "Dad"}; //client names
 const char* passwords[] = {"123", "234", "345", "456", "567"}; //corresponding client passwords
 //record whether the corresponding client is connected, same functionality as master
 bool connected[] = {false, false, false, false, false}; 
 int clientFds[] = {-1, -1, -1, -1, -1}; //record the corresponding client fds
+Session *joined[] = {NULL, NULL, NULL, NULL, NULL}; //points to the session the client joins, NULL for not joining any
 
 
 //this is the helper function that checks the type of command recieved and do corresponding things
@@ -30,7 +35,7 @@ void handle_message_type(Message* msg, int cFd){
         bool inlist = false;
         bool pwdright = false;
         //the request is to login
-        for(int i = 0; i < 5;i++){
+        for(int i = 0;i < 5;i++){
             //find out who is trying to login
             if((strcmp(clients[i], msg->source) == 0) && (strcmp(passwords[i], msg->data) == 0)){
                 if(strcmp(clients[i], msg->source) == 0) inlist = true;
@@ -44,7 +49,7 @@ void handle_message_type(Message* msg, int cFd){
                     strcpy(replyMsg.source, msg->source);
                     replyMsg.type = LO_NAK;
                     messageToStrings(replyMsg, reply_buffer);
-                    if(send(cFd, reply_buffer, strlen(reply_buffer), 0) == -1){
+                    if(send(cFd, reply_buffer, strlen(reply_buffer), 0) == -1){ //+1 needed?
                         printf("Error in sending the Message to the client\n");
                         exit(1);
                     }
@@ -59,7 +64,7 @@ void handle_message_type(Message* msg, int cFd){
                     replyMsg.type = LO_ACK;
                     messageToStrings(replyMsg, reply_buffer);
                     printf("line 61: %s\n", reply_buffer);
-                    if(send(cFd, reply_buffer, strlen(reply_buffer)+1, 0) == -1){
+                    if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ 
                         printf("Error in sending the Message to the client\n");
                         exit(1);
                     }
@@ -95,8 +100,149 @@ void handle_message_type(Message* msg, int cFd){
         }
         close(cFd); //simply delete this client Fd from the set
         printf("Successfully close the cFd at line 96\n");
-    }
+    }else if(Type == JOIN){
+        char *cId = msg->source;
+        char *name = msg->data;
+        bool found = false;
+        int whichOne = -1;
+        for(int i = 0;i < 5;i++){
+            if(joined[i] && (strcmp(name, joined[i]->name) == 0)){
+                found = true; //find that there's already someone joined in the session
+                whichOne = i;
+                break;
+            }
+        }
 
+        //session is there, join in
+        if(found){
+            Session *newJoin = (Session *)malloc(sizeof(Session));
+            strcpy(newJoin->name, name);
+            joined[whichOne] = newJoin;
+
+            char* replydata = name; //data field is the session id joined
+            strcpy(replyMsg.data, replydata);
+            replyMsg.size = strlen(replyMsg.data);
+            strcpy(replyMsg.source, msg->source);
+            replyMsg.type = JN_ACK;
+            messageToStrings(replyMsg, reply_buffer);
+            if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                printf("Error in sending the Message to the client\n");
+                exit(1);
+            }
+        }else{
+            char* replydata = ("Session %s does not exit!", name);
+            strcpy(replyMsg.data, replydata);
+            replyMsg.size = strlen(replyMsg.data);
+            strcpy(replyMsg.source, msg->source);
+            replyMsg.type = JN_NAK;
+            messageToStrings(replyMsg, reply_buffer);
+            if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                printf("Error in sending the Message to the client\n");
+                exit(1);
+            }
+        }
+    }else if(Type == LEAVE_SESS){
+        char *clientId = msg->source;
+        for(int i = 0;i < 5;i++){
+            if(strcmp(clients[i], clientId) == 0){
+                if(joined[i]){
+                    joined[i] = NULL;
+                    char* replydata = "Session left";
+                    strcpy(replyMsg.data, replydata);
+                    replyMsg.size = strlen(replyMsg.data);
+                    strcpy(replyMsg.source, msg->source);
+                    replyMsg.type = LEAVE_SESS;
+                    messageToStrings(replyMsg, reply_buffer);
+                    if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                        printf("Error in sending the Message to the client\n");
+                        exit(1);
+                    }
+                }
+            }
+        }
+    }else if(Type == NEW_SESS){
+        char *sessionId = (char *)msg->data;
+        char *clientId = (char *)msg->source;
+        Session *newSession = (Session *)malloc(sizeof(Session));
+        strcpy(newSession->name, sessionId);
+
+        for(int i = 0;i < 5;i++){
+            //find the client to start new session
+            if(strcmp(clients[i], clientId) == 0){
+                //if session does not exit yet
+                if(joined[i] == NULL){
+                    joined[i] = newSession;
+                    char* replydata = ("Created new session %s!", sessionId);
+                    strcpy(replyMsg.data, replydata);
+                    replyMsg.size = strlen(replyMsg.data);
+                    strcpy(replyMsg.source, msg->source);
+                    replyMsg.type = NS_ACK;
+                    messageToStrings(replyMsg, reply_buffer);
+                    if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                        printf("Error in sending the Message to the client\n");
+                        exit(1);
+                    }
+                }else if(strcmp(sessionId, joined[i]->name) == 0){
+                    char* replydata = ("Session %s already exist!", sessionId);        
+                    strcpy(replyMsg.data, replydata);
+                    replyMsg.size = strlen(replyMsg.data);
+                    strcpy(replyMsg.source, msg->source);
+                    replyMsg.type = NS_ACK;
+                    messageToStrings(replyMsg, reply_buffer);
+                    if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                        printf("Error in sending the Message to the client\n");
+                        exit(1);
+                    }
+                }
+            }
+        }
+    }else if(Type == MESSAGE){
+        char *clientId = msg->source;
+        Session *wantedsession = NULL;
+        //first, find out which session the message need to go
+        for(int i = 0;i < 5;i++){
+            if(connected[i] && strcmp(clients[i], clientId) == 0){
+                wantedsession = joined[i];
+                break;
+            }
+        }
+        //send to all clients in this session
+        for(int i = 0;i < 5;i++){
+            if(connected[i] && (strcmp(joined[i]->name, wantedsession->name)==0)) {
+                strcpy(replyMsg.data, msg->data);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = MESSAGE;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+                //send the message to this client
+            } 
+        }
+    }else if(Type == QUERY){
+        char replydata[MAX_MSG_TO_STRING];
+        memset(replydata, 0, sizeof(replydata));
+        for(int i = 0;i < 5;i++){ 
+            if(connected[i]){
+                if(joined[i] == NULL){
+                    sprintf(replydata + strlen(replydata), "%s:No Session\n", clients[i]);
+                }else{
+                    sprintf(replydata + strlen(replydata), "%s:%s\n", clients[i], joined[i]->name);
+                }
+            }
+        }
+        strcpy(replyMsg.data, replydata);
+        replyMsg.size = strlen(replyMsg.data);
+        strcpy(replyMsg.source, msg->source);
+        replyMsg.type = QU_ACK;
+        messageToStrings(replyMsg, reply_buffer);
+        if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+            printf("Error in sending the Message to the client\n");
+            exit(1);
+        }
+    }
 }
 
 
