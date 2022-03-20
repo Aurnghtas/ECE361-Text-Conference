@@ -267,11 +267,35 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
-    //socket initialization
-    int initialFd = 0;
-    initialFd = socket(res->ai_family, res->ai_socktype, res->ai_protocol); //create socket
-    //allow reuse of local addresses for bind
+    //loop through the results and bind to the first available one
+    struct addrinfo *ptr;
     int yes = 1;
+    int initialFd = 0;
+    for(ptr = res;ptr != NULL;ptr = ptr->ai_next){
+        //find available port num
+        if((initialFd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol)) == -1) {
+            perror("Server: socket");
+            continue;
+        }
+        /*if(setsockopt(initialFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+            perror("setsockopt");
+            exit(1);
+        }
+        if(bind(initialFd, ptr->ai_addr, ptr->ai_addrlen) == -1) {
+            close(initialFd);
+            perror("Server: bind");
+            continue;
+        }*/
+
+        //here we already find an available port num
+        break;
+    }
+
+    //socket initialization
+    //int initialFd = 0;
+    //initialFd = socket(res->ai_family, res->ai_socktype, res->ai_protocol); //create socket
+    //allow reuse of local addresses for bind
+    //int yes = 1;
     if(setsockopt(initialFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
         printf("Fails to set socket options\n");
         exit(1);
@@ -281,7 +305,7 @@ int main(int argc, char *argv[]){
         printf("Fails to bind to this port\n");
         exit(1);
     }
-
+    printf("Server at port number %d", initialFd);
     if(listen(initialFd, 10) == -1){ //maximum 10 pending requests
         printf("Fails to listen to connections\n");
         exit(1);
