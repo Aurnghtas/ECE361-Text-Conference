@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include <sys/select.h>
 
+char strnew[100];
+
 typedef struct session{
     char *name;
 }Session; 
@@ -115,7 +117,6 @@ void handle_message_type(Message* msg, int cFd){
 
         //session is there, join in
         if(found){
-            char strnew[100];
             joined[whichOne] = strnew;
             strcpy(joined[whichOne], name);
 
@@ -200,7 +201,6 @@ void handle_message_type(Message* msg, int cFd){
                 //if session does not exit yet
                 printf("line 199\n");
                 if(joined[i] == NULL){
-                    char strnew[100];
                     joined[i] = strnew;
                     strcpy(joined[i], sessionId);
                     printf("line 202: %s\n", joined[i]);
@@ -249,9 +249,10 @@ void handle_message_type(Message* msg, int cFd){
         for(int i = 0;i < 5;i++){ 
             if(connected[i]){
                 if(joined[i] == NULL){
-                    sprintf(replydata, "%s%s:No Session||",replydata, clients[i]);
+                    sprintf(replydata, "%s%s-No Session||",replydata, clients[i]);
                 }else{
-                    sprintf(replydata, "%s%s:%s||", replydata, clients[i], joined[i]);
+                    printf("line 254: %s\n", joined[i]);
+                    sprintf(replydata, "%s%s-%s||", replydata, clients[i], joined[i]);
                 }
             }
         }
