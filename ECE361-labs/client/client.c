@@ -38,8 +38,8 @@ char curr_session[100]; // current session the client is in
 void *receive_thread_start(void *fd) {
     int *socketfd = (int *)fd;
 
-    /* we have 7 types of message - LO_ACK, LO_NAK, JN_ACK, JN_NAK, NS_ACK, MESSAGE, QU_ACK *
-     * but LO_ACK and LO_NAK are used by the main thread to verify the socketfd -> 5 types left */
+    /* we have 8 types of message - LO_ACK, LO_NAK, JN_ACK, JN_NAK, NS_ACK, NS_NAK, MESSAGE, QU_ACK *
+     * but LO_ACK and LO_NAK are used by the main thread to verify the socketfd -> 6 types left */
 
     Message recv_msg_2;
     char recv_buffer_2[MAX_MSG_TO_STRING];
@@ -62,13 +62,17 @@ void *receive_thread_start(void *fd) {
         }
 
         else if(recv_msg_2.type==JN_NAK) {
-            printf("Failed to create session %s, please retry\n", recv_msg_2.data);
+            printf("Failed to join session %s, please retry\n", recv_msg_2.data);
         }
 
         else if(recv_msg_2.type==NS_ACK) {
             printf("Successfully create session %s\n", recv_msg_2.data);
             in_session = true;
             strcpy(curr_session, recv_msg_2.data);
+        }
+
+        else if(recv_msg_2.type==NS_NAK) {
+            printf("Failed to create session %s\n", recv_msg_2.data);
         }
 
         else if(recv_msg_2.type==MESSAGE) {

@@ -20,7 +20,10 @@ enum messageType{
     NS_ACK,
     MESSAGE,
     QUERY,
-    QU_ACK
+    QU_ACK,
+
+    /* following are self-defined messageType */
+    NS_NAK // for failed to crate a new session
 };
 
 //the structure for messages in the conference lab

@@ -161,30 +161,41 @@ void handle_message_type(Message* msg, int cFd){
             }
         }
     }else if(Type == NEW_SESS){
+        printf("now we are in create new session\n");
         char *sessionId = (char *)msg->data;
         char *clientId = (char *)msg->source;
-        Session *newSession = (Session *)malloc(sizeof(Session));
-        strcpy(newSession->name, sessionId);
+        // Session *newSession = (Session *)malloc(sizeof(Session));
+        // strcpy(newSession->name, sessionId);
 
         //check if session already exits
+        printf("now we are in line 171 to check for the client and session: %s and %s\n", clientId, sessionId);
         bool exists = false;
         for(int i = 0;i < 5;i++){
-            if(strcmp(sessionId, joined[i]->name) == 0){
+            if(joined[i] != NULL){
+                printf("line 174: %s\n", joined[i]->name);
+            }
+            if(joined[i]!=NULL && strcmp(sessionId, joined[i]->name) == 0){
                 exists = true;
+                break;
             }
         }
+        printf("line 178\n");
         if(exists){
             char* replydata = ("Session %s already exist!", sessionId);        
             strcpy(replyMsg.data, replydata);
             replyMsg.size = strlen(replyMsg.data);
             strcpy(replyMsg.source, msg->source);
-            replyMsg.type = NS_ACK;
+            replyMsg.type = NS_NAK;
             messageToStrings(replyMsg, reply_buffer);
+            printf("line 186: %s\n", reply_buffer);
             if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
                 printf("Error in sending the Message to the client\n");
                 exit(1);
             }
+            return;
         }
+        Session *newSession = (Session *)malloc(sizeof(Session));
+        strcpy(newSession->name, sessionId);
         for(int i = 0;i < 5;i++){
             //find the client to start new session
             if(strcmp(clients[i], clientId) == 0){
