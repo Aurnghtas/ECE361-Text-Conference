@@ -22,7 +22,7 @@ const char* passwords[] = {"123", "234", "345", "456", "567"}; //corresponding c
 //record whether the corresponding client is connected, same functionality as master
 bool connected[] = {false, false, false, false, false}; 
 int clientFds[] = {-1, -1, -1, -1, -1}; //record the corresponding client fds
-Session *joined[] = {NULL, NULL, NULL, NULL, NULL}; //points to the session the client joins, NULL for not joining any
+char *joined[] = {NULL, NULL, NULL, NULL, NULL}; //points to the session the client joins, NULL for not joining any
 
 
 //this is the helper function that checks the type of command recieved and do corresponding things
@@ -106,7 +106,7 @@ void handle_message_type(Message* msg, int cFd){
         bool found = false;
         int whichOne = -1;
         for(int i = 0;i < 5;i++){
-            if(joined[i] && (strcmp(name, joined[i]->name) == 0)){
+            if(joined[i] && (strcmp(name, joined[i]) == 0)){
                 found = true; //find that there's already someone joined in the session
                 whichOne = i;
                 break;
@@ -115,9 +115,7 @@ void handle_message_type(Message* msg, int cFd){
 
         //session is there, join in
         if(found){
-            Session *newJoin = (Session *)malloc(sizeof(Session));
-            strcpy(newJoin->name, name);
-            joined[whichOne] = newJoin;
+            strcpy(joined[whichOne], name);
 
             char* replydata = name; //data field is the session id joined
             strcpy(replyMsg.data, replydata);
@@ -172,9 +170,9 @@ void handle_message_type(Message* msg, int cFd){
         bool exists = false;
         for(int i = 0;i < 5;i++){
             if(joined[i] != NULL){
-                printf("line 174: %s\n", joined[i]->name);
+                printf("line 174: %s\n", joined[i]);
             }
-            if(joined[i]!=NULL && strcmp(sessionId, joined[i]->name) == 0){
+            if(joined[i]!=NULL && strcmp(sessionId, joined[i]) == 0){
                 exists = true;
                 break;
             }
@@ -194,14 +192,12 @@ void handle_message_type(Message* msg, int cFd){
             }
             return;
         }
-        Session *newSession = (Session *)malloc(sizeof(Session));
-        strcpy(newSession->name, sessionId);
         for(int i = 0;i < 5;i++){
             //find the client to start new session
             if(strcmp(clients[i], clientId) == 0){
                 //if session does not exit yet
                 if(joined[i] == NULL){
-                    joined[i] = newSession;
+                    strcpy(joined[i], sessionId);
                     char* replydata = ("Created new session %s!", sessionId);
                     strcpy(replyMsg.data, replydata);
                     replyMsg.size = strlen(replyMsg.data);
@@ -217,17 +213,17 @@ void handle_message_type(Message* msg, int cFd){
         }
     }else if(Type == MESSAGE){
         char *clientId = msg->source;
-        Session *wantedsession = NULL;
+        char *wantedsession = NULL;
         //first, find out which session the message need to go
         for(int i = 0;i < 5;i++){
             if(connected[i] && strcmp(clients[i], clientId) == 0){
-                wantedsession = joined[i];
+                strcpy(wantedsession, joined[i]);
                 break;
             }
         }
         //send to all clients in this session
         for(int i = 0;i < 5;i++){
-            if(connected[i] && (strcmp(joined[i]->name, wantedsession->name)==0)) {
+            if(connected[i] && (strcmp(joined[i], wantedsession)==0)) {
                 strcpy(replyMsg.data, msg->data);
                 replyMsg.size = strlen(replyMsg.data);
                 strcpy(replyMsg.source, msg->source);
@@ -249,7 +245,7 @@ void handle_message_type(Message* msg, int cFd){
                 if(joined[i] == NULL){
                     sprintf(replydata, "%s%s:No Session||",replydata, clients[i]);
                 }else{
-                    sprintf(replydata, "%s%s:%s||", replydata, clients[i], joined[i]->name);
+                    sprintf(replydata, "%s%s:%s||", replydata, clients[i], joined[i]);
                 }
             }
         }
