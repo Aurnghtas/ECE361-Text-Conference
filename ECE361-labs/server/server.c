@@ -115,6 +115,8 @@ void handle_message_type(Message* msg, int cFd){
 
         //session is there, join in
         if(found){
+            char strnew[100];
+            joined[whichOne] = strnew;
             strcpy(joined[whichOne], name);
 
             char* replydata = name; //data field is the session id joined
@@ -198,6 +200,8 @@ void handle_message_type(Message* msg, int cFd){
                 //if session does not exit yet
                 printf("line 199\n");
                 if(joined[i] == NULL){
+                    char strnew[100];
+                    joined[i] = strnew;
                     strcpy(joined[i], sessionId);
                     printf("line 202: %s\n", joined[i]);
                     char* replydata = ("Created new session %s!", sessionId);
