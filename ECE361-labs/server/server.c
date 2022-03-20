@@ -228,9 +228,9 @@ void handle_message_type(Message* msg, int cFd){
         for(int i = 0;i < 5;i++){ 
             if(connected[i]){
                 if(joined[i] == NULL){
-                    sprintf(replydata + strlen(replydata), "%s:No Session\n", clients[i]);
+                    sprintf(replydata, "%s%s:No Session\n",replydata, clients[i]);
                 }else{
-                    sprintf(replydata + strlen(replydata), "%s:%s\n", clients[i], joined[i]->name);
+                    sprintf(replydata, "%s%s:%s\n", replydata, clients[i], joined[i]->name);
                 }
             }
         }
