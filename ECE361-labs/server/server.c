@@ -228,9 +228,9 @@ void handle_message_type(Message* msg, int cFd){
         for(int i = 0;i < 5;i++){ 
             if(connected[i]){
                 if(joined[i] == NULL){
-                    sprintf(replydata, "%s%s:No Session\n",replydata, clients[i]);
+                    sprintf(replydata, "%s%s:No Session||",replydata, clients[i]);
                 }else{
-                    sprintf(replydata, "%s%s:%s\n", replydata, clients[i], joined[i]->name);
+                    sprintf(replydata, "%s%s:%s||", replydata, clients[i], joined[i]->name);
                 }
             }
         }
@@ -239,7 +239,7 @@ void handle_message_type(Message* msg, int cFd){
         strcpy(replyMsg.source, msg->source);
         replyMsg.type = QU_ACK;
         messageToStrings(replyMsg, reply_buffer);
-        printf("line 242: reply_buffer");
+        printf("line 242: %s\n", reply_buffer);
         if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
             printf("Error in sending the Message to the client\n");
             exit(1);

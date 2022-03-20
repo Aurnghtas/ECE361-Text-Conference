@@ -77,7 +77,7 @@ void *receive_thread_start(void *fd) {
 
         else if(recv_msg_2.type==QU_ACK) {
             printf("Following are the users and sessions online\n");
-            printf("%s\n", recv_buffer_2);
+            printf("%s\n", recv_msg_2.data);
         }
 
         else {
