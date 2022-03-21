@@ -98,7 +98,6 @@ void handle_message_type(Message* msg, int cFd){
             }
         }
         close(cFd); //simply delete this client Fd from the set
-        printf("Successfully close the cFd at line 96\n");
     }else if(Type == JOIN){
         char *cId = msg->source;
         char *name = msg->data;
@@ -161,9 +160,6 @@ void handle_message_type(Message* msg, int cFd){
         //check if session already exits
         bool exists = false;
         for(int i = 0;i < 5;i++){
-            if(joined[i] != NULL){
-                printf("line 174: %s\n", joined[i]);
-            }
             if(joined[i]!=NULL && strcmp(sessionId, joined[i]) == 0){
                 exists = true;
                 break;
@@ -234,7 +230,6 @@ void handle_message_type(Message* msg, int cFd){
                 if(joined[i] == NULL){
                     sprintf(replydata, "%s%s-No Session||",replydata, clients[i]);
                 }else{
-                    printf("line 254: %s\n", joined[i]);
                     sprintf(replydata, "%s%s-%s||", replydata, clients[i], joined[i]);
                 }
             }
