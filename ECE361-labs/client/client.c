@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <signal.h>
 
 #define MAX_INPUT_LEN 1024
 
@@ -30,6 +31,41 @@ const char *quit = "/quit";
  ********************/
 bool in_session = false; // whether the client joins a conference session or not
 char curr_session[100]; // current session the client is in
+volatile sig_atomic_t flag = 0;
+int socketfd = -2;
+bool logged_in = false; // whether the client logs in or not
+char curr_ID[100]; // current client who is using the program
+pthread_t receive_thread;
+
+void controlCFunction(int sig) {
+    printf("Program crashes! Terminating the program!\n");
+    /* send logout Message to the server first */
+    Message crash_msg;
+    char crash_msg_buffer[MAX_MSG_TO_STRING]; // buffer for converting Message to strings
+
+    crash_msg.type = EXIT;
+    strcpy(crash_msg.source, curr_ID);
+    strcpy(crash_msg.data, " \0");
+    crash_msg.size = strlen(crash_msg.data);
+    messageToStrings(crash_msg, crash_msg_buffer);
+
+    if(send(socketfd, crash_msg_buffer, strlen(crash_msg_buffer), 0)==-1){
+        printf("Error in sending the LOGOUT Message to the server\n");
+    }
+
+    if(logged_in) {
+        int rv = pthread_cancel(receive_thread);
+        if(rv==0) {
+            printf("Successfully shutdown the receive thread\n");
+        } else {
+            printf("NOT successfully shutdown the receive thread\n");
+        }
+    }
+
+    close(socketfd);
+    exit(0);
+}
+
 
 /*******************************************************
  *      this is the function run by a new thread       *
@@ -105,10 +141,9 @@ int main(int argc, char *argv[]) {
     char user_input[MAX_INPUT_LEN];
     char users_message[MAX_INPUT_LEN];
     char *command;
-    int socketfd = -2;
-    bool logged_in = false; // whether the client logs in or not
-    char curr_ID[100]; // current client who is using the program
-    pthread_t receive_thread;
+
+    /* handle control c situation */
+    signal(SIGINT, controlCFunction);
 
     while(true) {
         Message msg;
@@ -354,6 +389,12 @@ int main(int argc, char *argv[]) {
          * list command *
          ****************/
         else if(strcmp(command, list)==0) {
+            if(logged_in == false) {
+                printf("Please log in first before using /list command\n");
+                continue;
+            }
+
+
             msg.type = QUERY;
             strcpy(msg.source, " \0");
             strcpy(msg.data, " \0");

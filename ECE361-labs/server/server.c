@@ -12,10 +12,6 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-typedef struct session{
-    char *name;
-}Session; 
-
 //globals here, allows 5 users at a time
 const char* clients[] = {"Tom", "Jack", "Albert", "Mom", "Dad"}; //client names
 const char* passwords[] = {"123", "234", "345", "456", "567"}; //corresponding client passwords
@@ -37,6 +33,20 @@ void handle_message_type(Message* msg, int cFd){
         //the request is to login
         for(int i = 0;i < 5;i++){
             //find out who is trying to login
+            if((strcmp(clients[i], msg->source) == 0) && (strcmp(passwords[i], msg->data) != 0)){
+                //invalid password
+                //this client is already connected
+                char* replydata = "Passwaord is incorrect!";
+                strcpy(replyMsg.data, replydata);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = LO_NAK;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(cFd, reply_buffer, strlen(reply_buffer), 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+            }
             if((strcmp(clients[i], msg->source) == 0) && (strcmp(passwords[i], msg->data) == 0)){
                 if(strcmp(clients[i], msg->source) == 0) inlist = true;
                 if(strcmp(passwords[i], msg->data) == 0) pwdright = true;
