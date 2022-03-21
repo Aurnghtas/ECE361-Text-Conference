@@ -238,11 +238,13 @@ int main(int argc, char *argv[]) {
             //     printf("Error in receiving the Message from the server\n");
             // }
 
-            int rv = pthread_cancel(receive_thread);
-            if(rv==0) {
-                printf("Successfully shutdown the receive thread\n");
-            } else {
-                printf("NOT successfully shutdown the receive thread\n");
+            if(logged_in) {
+                int rv = pthread_cancel(receive_thread);
+                if(rv==0) {
+                    printf("Successfully shutdown the receive thread\n");
+                } else {
+                    printf("NOT successfully shutdown the receive thread\n");
+                }
             }
             
             close(socketfd);
@@ -448,6 +450,15 @@ int main(int argc, char *argv[]) {
 
             if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
                 printf("Error in sending the LOGOUT Message to the server\n");
+            }
+
+            if(logged_in) {
+                int rv = pthread_cancel(receive_thread);
+                if(rv==0) {
+                    printf("Successfully shutdown the receive thread\n");
+                } else {
+                    printf("NOT successfully shutdown the receive thread\n");
+                }
             }
 
             close(socketfd);
