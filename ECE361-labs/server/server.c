@@ -63,7 +63,6 @@ void handle_message_type(Message* msg, int cFd){
                     strcpy(replyMsg.source, msg->source);
                     replyMsg.type = LO_ACK;
                     messageToStrings(replyMsg, reply_buffer);
-                    printf("line 61: %s\n", reply_buffer);
                     if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ 
                         printf("Error in sending the Message to the client\n");
                         exit(1);
@@ -152,28 +151,14 @@ void handle_message_type(Message* msg, int cFd){
             if(strcmp(clients[i], clientId) == 0){
                 if(joined[i]){
                     joined[i] = NULL;
-                    /*char* replydata = "Session left";
-                    strcpy(replyMsg.data, replydata);
-                    replyMsg.size = strlen(replyMsg.data);
-                    strcpy(replyMsg.source, msg->source);
-                    replyMsg.type = LEAVE_SESS;
-                    messageToStrings(replyMsg, reply_buffer);
-                    if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
-                        printf("Error in sending the Message to the client\n");
-                        exit(1);
-                    }*/
                 }
             }
         }
     }else if(Type == NEW_SESS){
-        printf("now we are in create new session\n");
         char *sessionId = (char *)msg->data;
         char *clientId = (char *)msg->source;
-        // Session *newSession = (Session *)malloc(sizeof(Session));
-        // strcpy(newSession->name, sessionId);
 
         //check if session already exits
-        printf("now we are in line 171 to check for the client and session: %s and %s\n", clientId, sessionId);
         bool exists = false;
         for(int i = 0;i < 5;i++){
             if(joined[i] != NULL){
@@ -184,7 +169,6 @@ void handle_message_type(Message* msg, int cFd){
                 break;
             }
         }
-        printf("line 180: %d\n",exists);
         if(exists){
             char* replydata = ("Session %s already exist!", sessionId);        
             strcpy(replyMsg.data, replydata);
@@ -192,7 +176,6 @@ void handle_message_type(Message* msg, int cFd){
             strcpy(replyMsg.source, msg->source);
             replyMsg.type = NS_NAK;
             messageToStrings(replyMsg, reply_buffer);
-            printf("line 186: %s\n", reply_buffer);
             if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
                 printf("Error in sending the Message to the client\n");
                 exit(1);
@@ -203,11 +186,9 @@ void handle_message_type(Message* msg, int cFd){
             //find the client to start new session
             if(strcmp(clients[i], clientId) == 0){
                 //if session does not exit yet
-                printf("line 199\n");
                 if(joined[i] == NULL){
                     joined[i] = strnew[i];
                     strcpy(joined[i], sessionId);
-                    printf("line 202: %s\n", joined[i]);
                     char* replydata = ("Created new session %s!", sessionId);
                     strcpy(replyMsg.data, replydata);
                     replyMsg.size = strlen(replyMsg.data);
@@ -222,7 +203,6 @@ void handle_message_type(Message* msg, int cFd){
             }
         }
     }else if(Type == MESSAGE){
-        printf("line 225: now we are dealing with messages\n");
         char *clientId = msg->source;
         char wantedsession[100];
         //first, find out which session the message need to go
@@ -232,7 +212,6 @@ void handle_message_type(Message* msg, int cFd){
                 break;
             }
         }
-        printf("line 235: now wo want to send session %s to all clients\n", wantedsession);
         //send to all clients in this session
         for(int i = 0;i < 5;i++){
             if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) && (strcmp(clients[i], clientId)!=0)) {
@@ -245,11 +224,9 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
-                //send the message to this client
             } 
         }
     }else if(Type == QUERY){
-        printf("Now the message type is QUERY\n");
         char replydata[MAX_MSG_TO_STRING];
         memset(replydata, 0, sizeof(replydata));
         for(int i = 0;i < 5;i++){ 
@@ -267,7 +244,6 @@ void handle_message_type(Message* msg, int cFd){
         strcpy(replyMsg.source, msg->source);
         replyMsg.type = QU_ACK;
         messageToStrings(replyMsg, reply_buffer);
-        printf("line 242: %s\n", reply_buffer);
         if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
             printf("Error in sending the Message to the client\n");
             exit(1);
@@ -284,8 +260,6 @@ int main(int argc, char *argv[]){
     }
 
     //find available ports
-    //char available_host[20];
-    //gethostname(available_host, sizeof(available_host));
     int rv;
     struct addrinfo hints, *res;
     memset(&hints, 0, sizeof hints);    //using memset to initialize struct
@@ -375,20 +349,16 @@ int main(int argc, char *argv[]){
                 int cFd = clientFds[i];
                 //if ready, then read
                 if(FD_ISSET(cFd, &FD_sets)){
-                    //printf("%d\n",cFd);
                     memset(buffer, '\0', MAX_MSG_TO_STRING);
                     num_Byte_recieved = recv(cFd, buffer, MAX_MSG_TO_STRING, 0); //read
-                    printf("line 181: %s\n", buffer);
                     if(num_Byte_recieved == -1){
                         printf("Fails to receive message 1\n");
                         exit(1);
                     }
 
                     buffer[num_Byte_recieved] = '\0';
-
                     Message msg;
                     msg = stringsToMessage(buffer); //parse the buffer(char *) into struct message
-
                     handle_message_type(&msg, cFd);
                 }  
             }
@@ -407,22 +377,15 @@ int main(int argc, char *argv[]){
             int num_Byte_recieved = 0;
             memset(buffer, '\0', MAX_MSG_TO_STRING);
             num_Byte_recieved = recv(newFd, buffer, MAX_MSG_TO_STRING, 0); //read
-            printf("line 213: %d\n", newFd);
-            printf("line 214: %s\n", buffer);
             if(num_Byte_recieved == -1){
                 printf("Fails to receive message 2\n");
                 exit(1);
             }
 
             buffer[num_Byte_recieved] = '\0';
-
             Message msg;
             msg = stringsToMessage(buffer); //parse the buffer(char *) into struct message
-            printf("line 220: %d, %d, %s, %s\n", msg.type, msg.size, msg.source, msg.data);
-
             handle_message_type(&msg, newFd);
-            printf("now we are at line 223\n");
         }
-
     }
 }
