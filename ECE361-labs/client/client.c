@@ -232,12 +232,6 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-            // /* receive ack from the server */
-            // int num_bytes_recv = recv(socketfd, recv_buffer, strlen(recv_buffer), 0);
-            // if(num_bytes_recv==-1) {
-            //     printf("Error in receiving the Message from the server\n");
-            // }
-
             if(logged_in) {
                 int rv = pthread_cancel(receive_thread);
                 if(rv==0) {
@@ -274,8 +268,6 @@ int main(int argc, char *argv[]) {
                     continue;
                 }
 
-                //strcpy(curr_session, session_ID); // store session ID for future reference
-
                 msg.type = JOIN;
                 strcpy(msg.source, curr_ID);
                 strcpy(msg.data, session_ID);
@@ -286,25 +278,6 @@ int main(int argc, char *argv[]) {
                     printf("Error in sending the joinsession Message to the server\n");
                     continue;
                 }
-
-                // /* receive ack from the server */
-                // int num_bytes_recv = recv(socketfd, recv_buffer, MAX_MSG_TO_STRING, 0);
-                // if(num_bytes_recv==-1) {
-                //     printf("Error in receiving ack for joinsession Message from the server\n");
-                //     continue;
-                // }
-
-                // recv_buffer[num_bytes_recv] = '\0'; // add the string terminator to the buffer
-
-                // recv_msg = stringsToMessage(recv_buffer);
-                
-                // if(recv_msg.type==JN_ACK) {
-                //     printf("Successfully join session %s\n", session_ID);
-                //     strcpy(curr_session, session_ID); // store session ID for future reference
-                //     in_session = true;
-                // } else if(recv_msg.type==JN_NAK) {
-                //     printf("Failed to create session %s, please retry\n", session_ID);
-                // }
                 
             }
         } 
@@ -373,25 +346,6 @@ int main(int argc, char *argv[]) {
                     continue;
                 }
 
-                // /* receive ack from the server */
-                // int num_bytes_recv = recv(socketfd, recv_buffer, MAX_MSG_TO_STRING, 0);
-                // if(num_bytes_recv==-1) {
-                //     printf("Error in receiving ack for createsession Message from the server\n");
-                //     continue;
-                // }
-
-                // recv_buffer[num_bytes_recv] = '\0'; // add the string terminator to the buffer
-
-                // recv_msg = stringsToMessage(recv_buffer);
-                
-                // if(recv_msg.type==NS_ACK) {
-                //     printf("Successfully create session %s\n", session_ID);
-                //     strcpy(curr_session, session_ID); // store session ID for future reference
-                //     in_session = true;
-                // } else {
-                //     printf("Failed to create session %s, please retry\n", session_ID);
-                // }
-                
             }
 
         } 
@@ -410,24 +364,6 @@ int main(int argc, char *argv[]) {
                 printf("Error in sending the list Message to the server\n");
                 continue;
             }
-
-            // /* receive ack from the server */
-            // int num_bytes_recv = recv(socketfd, recv_buffer, MAX_MSG_TO_STRING, 0);
-            // if(num_bytes_recv==-1) {
-            //     printf("Error in receiving ack for createsession Message from the server\n");
-            //     continue;
-            // }
-
-            // recv_buffer[num_bytes_recv] = '\0'; // add the string terminator to the buffer
-
-            // recv_msg = stringsToMessage(recv_buffer);
-
-            // if(recv_msg.type==QU_ACK) {
-            //     printf("Following are the users and sessions online");
-            //     printf("%s\n", recv_buffer);
-            // } else {
-            //     printf("Failed to list the users and sessions online");
-            // }
 
         } 
 
