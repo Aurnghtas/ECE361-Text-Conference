@@ -34,7 +34,7 @@ char curr_session[100]; // current session the client is in
 /*******************************************************
  *      this is the function run by a new thread       *
  * all it does is to wait for messages from the server *
- * *****************************************************/
+ *******************************************************/
 void *receive_thread_start(void *fd) {
     int *socketfd = (int *)fd;
 
@@ -150,10 +150,6 @@ int main(int argc, char *argv[]) {
             }
 
             strcpy(curr_ID, client_ID); // save client_ID in curr_ID for future reference
-            printf("at line 80 %s\n",curr_ID);
-
-            /*!!!!!!!!!!!!!!!! Only For Debug Purpose !!!!!!!!!!!!!!!!*/
-            printf("inside login command, we have %s %s %s %s\n", client_ID, pwd, server_IP, server_port);
 
             /* establish the connection */
             int rv;
@@ -171,7 +167,7 @@ int main(int argc, char *argv[]) {
 
             /* get the socketfd */
             if((socketfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1) {
-                printf("Failed to create a socket in login\n");
+                printf("Failed to create a socketfd in login\n");
                 exit(1);
             }
 
@@ -188,7 +184,6 @@ int main(int argc, char *argv[]) {
             msg.size = strlen(msg.data);
             messageToStrings(msg, msg_buffer);
 
-            printf("Sending msg_buffer to the server: %s\n", msg_buffer);
             if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
                 printf("Error in sending the LOGIN Message to the server\n");
                 continue;
@@ -199,7 +194,6 @@ int main(int argc, char *argv[]) {
             if(num_bytes_recv==-1) {
                 printf("Error in receiving ack for LOGIN Message from the server\n");
             }
-            printf("line 126: %s\n", recv_buffer);
 
             recv_buffer[num_bytes_recv] = '\0'; // add the string terminator to the buffer
 
@@ -221,7 +215,6 @@ int main(int argc, char *argv[]) {
          * logout command *
          ******************/
         else if(strcmp(command, logout)==0) {
-            printf("now we are in logout!\n");
             if(socketfd==-2 && logged_in==false) {
                 printf("You have not logged in yet, please log in first\n");
                 continue;
@@ -230,11 +223,9 @@ int main(int argc, char *argv[]) {
             /* send logout Message to the server */
             msg.type = EXIT;
             strcpy(msg.source, curr_ID);
-            printf("%s\n"), curr_ID;
             strcpy(msg.data, " \0");
             msg.size = strlen(msg.data);
             messageToStrings(msg, msg_buffer);
-            printf("line 161: %s\n", msg_buffer);
 
             if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
                 printf("Error in sending the LOGOUT Message to the server\n");
@@ -255,7 +246,6 @@ int main(int argc, char *argv[]) {
             }
             
             close(socketfd);
-            printf("now we are at line 169\n");
             socketfd=-2;
             logged_in = false;
         } 
@@ -485,7 +475,7 @@ int main(int argc, char *argv[]) {
             messageToStrings(msg, msg_buffer);
 
             if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
-                printf("Error in sending the LOGOUT Message to the server\n");
+                printf("Error in sending Message to the server\n");
             }
         }
 
