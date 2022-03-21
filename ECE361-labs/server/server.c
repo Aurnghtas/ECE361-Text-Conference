@@ -284,15 +284,22 @@ int main(int argc, char *argv[]){
     }
 
     //find available ports
-    char available_host[20];
-    gethostname(available_host, sizeof(available_host));
+    //char available_host[20];
+    //gethostname(available_host, sizeof(available_host));
     int rv;
     struct addrinfo hints, *res;
     memset(&hints, 0, sizeof hints);    //using memset to initialize struct
     hints.ai_family = AF_INET;          //IPv4 internet protocols
     hints.ai_socktype = SOCK_STREAM;    //socket is TCP
     hints.ai_flags = AI_PASSIVE;
-    if((rv = getaddrinfo(available_host, argv[1], &hints, &res)) != 0){
+    //char Startnum[10] = "2000";
+    int startNum = atoi(argv[1]);
+    while(startNum <= 1023){
+        startNum += 50;
+    }
+    char Startnum[20];
+    sprintf(Startnum, "%d", startNum);
+    if((rv = getaddrinfo(NULL, Startnum, &hints, &res)) != 0){
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         exit(1);
     }
@@ -303,39 +310,28 @@ int main(int argc, char *argv[]){
     int initialFd = 0;
     for(ptr = res;ptr != NULL;ptr = ptr->ai_next){
         //find available port num
-        if((initialFd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol)) == -1) {
-            perror("Server: socket");
+        initialFd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+        if(initialFd == -1) continue;
+
+        if(setsockopt(initialFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
+            printf("Fails to set socket options\n");
             continue;
         }
-        /*if(setsockopt(initialFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-            perror("setsockopt");
-            exit(1);
+        //bind to port
+        if(bind(initialFd, res->ai_addr, res->ai_addrlen) == 0){
+            printf("Server at port number %d\n", startNum);
+            break;
         }
-        if(bind(initialFd, ptr->ai_addr, ptr->ai_addrlen) == -1) {
-            close(initialFd);
-            perror("Server: bind");
-            continue;
-        }*/
 
         //here we already find an available port num
-        break;
+        //break;
     }
-
-    //socket initialization
-    //int initialFd = 0;
-    //initialFd = socket(res->ai_family, res->ai_socktype, res->ai_protocol); //create socket
-    //allow reuse of local addresses for bind
-    //int yes = 1;
-    if(setsockopt(initialFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
-        printf("Fails to set socket options\n");
-        exit(1);
+    freeaddrinfo(res);           /* No longer needed */
+    if(ptr == NULL){               /* No address succeeded */
+        fprintf(stderr, "Could not bind\n");
+        exit(EXIT_FAILURE);
     }
-    //bind to port
-    if(bind(initialFd, res->ai_addr, res->ai_addrlen) < 0){
-        printf("Fails to bind to this port\n");
-        exit(1);
-    }
-    printf("Server at port number %d", initialFd);
+    
     if(listen(initialFd, 10) == -1){ //maximum 10 pending requests
         printf("Fails to listen to connections\n");
         exit(1);
