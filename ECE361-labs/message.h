@@ -23,7 +23,10 @@ enum messageType{
     QU_ACK,
 
     /* following are self-defined messageType */
-    NS_NAK // for failed to crate a new session
+    NS_NAK, // for failed to crate a new session
+    P_MESSAGE, // for private messaging
+    KICK, // for kicking out a client
+    GIVEADMIN // for giving administration to another
 };
 
 //the structure for messages in the conference lab

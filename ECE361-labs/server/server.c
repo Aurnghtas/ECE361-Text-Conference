@@ -253,7 +253,7 @@ void handle_message_type(Message* msg, int cFd){
             printf("Error in sending the Message to the client\n");
             exit(1);
         }
-    }else if(Type == MESSAGE){
+    }else if(Type == P_MESSAGE){
         char *clientId = msg->source;
         char wantedsession[100];
         //first, find out which session the message need to go
