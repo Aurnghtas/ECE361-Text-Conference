@@ -1,0 +1,13 @@
+We implement private messaging and session admins as our addtional features.
+
+For private messaging, we add a new message type called P_MESSAGE indicating this is a private message.
+The source field of the private message indicates the name of the reviever.
+We also need a new command in the form of (/private reciever_name text) for clients to send private messages.
+In the server end, we added a new way for dealing with message type P_MESSAGE, where server only deliver the 
+message to the client specified.
+
+For session admins, we add a flag to indicate whether a client is an administrator in the server end.
+We added two new message types called KICK and GIVEADMIN for kicking a client out of the session and 
+giving administrator to another client in the session.
+We added two new commands, one in the form of (/kick name) for KICK, one in the form of (/giveadmin name) for GIVEADMIN.
+We put the subject of KICK and GIVEADMIN in the data field.

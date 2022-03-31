@@ -253,6 +253,30 @@ void handle_message_type(Message* msg, int cFd){
             printf("Error in sending the Message to the client\n");
             exit(1);
         }
+    }else if(Type == MESSAGE){
+        char *clientId = msg->source;
+        char wantedsession[100];
+        //first, find out which session the message need to go
+        for(int i = 0;i < 5;i++){
+            if(connected[i] && strcmp(clients[i], clientId) == 0){
+                strcpy(wantedsession, joined[i]);
+                break;
+            }
+        }
+        //send to all clients in this session
+        for(int i = 0;i < 5;i++){
+            if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) && (strcmp(clients[i], clientId)!=0)) {
+                strcpy(replyMsg.data, msg->data);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = MESSAGE;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(clientFds[i], reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+            } 
+        }
     }
 }
 
