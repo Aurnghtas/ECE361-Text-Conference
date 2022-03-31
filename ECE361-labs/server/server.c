@@ -255,17 +255,9 @@ void handle_message_type(Message* msg, int cFd){
         }
     }else if(Type == P_MESSAGE){
         char *clientId = msg->source;
-        char wantedsession[100];
-        //first, find out which session the message need to go
+        //send to the specific client that's in some session
         for(int i = 0;i < 5;i++){
-            if(connected[i] && strcmp(clients[i], clientId) == 0){
-                strcpy(wantedsession, joined[i]);
-                break;
-            }
-        }
-        //send to all clients in this session
-        for(int i = 0;i < 5;i++){
-            if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) && (strcmp(clients[i], clientId)!=0)) {
+            if(connected[i] && joined[i] && (strcmp(clients[i], clientId)!=0)){
                 strcpy(replyMsg.data, msg->data);
                 replyMsg.size = strlen(replyMsg.data);
                 strcpy(replyMsg.source, msg->source);

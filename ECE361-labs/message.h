@@ -25,6 +25,8 @@ enum messageType{
     /* following are self-defined messageType */
     NS_NAK, // for failed to crate a new session
     P_MESSAGE, // for private messaging
+    P_ACK, //for successful private message
+    P_NAK, //for unsuccessful private message
     KICK, // for kicking out a client
     GIVEADMIN // for giving administration to another
 };
