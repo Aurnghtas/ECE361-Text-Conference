@@ -257,17 +257,27 @@ void handle_message_type(Message* msg, int cFd){
         char *clientId = msg->source;
         //send to the specific client that's in some session
         for(int i = 0;i < 5;i++){
-            if(connected[i] && joined[i] && (strcmp(clients[i], clientId)!=0)){
+            if(connected[i] && (strcmp(clients[i], clientId)!=0) && joined[i]){ //target in session
                 strcpy(replyMsg.data, msg->data);
                 replyMsg.size = strlen(replyMsg.data);
                 strcpy(replyMsg.source, msg->source);
-                replyMsg.type = MESSAGE;
+                replyMsg.type = P_ACK;
                 messageToStrings(replyMsg, reply_buffer);
                 if(send(clientFds[i], reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
-            } 
+            }else if(connected[i] && (strcmp(clients[i], clientId)!=0) && !joined[i]){ //target not in session
+                strcpy(replyMsg.data, msg->data);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = P_NAK;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(clientFds[i], reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+            }
         }
     }
 }

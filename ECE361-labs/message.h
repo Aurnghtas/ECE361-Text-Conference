@@ -28,7 +28,11 @@ enum messageType{
     P_ACK, //for successful private message
     P_NAK, //for unsuccessful private message
     KICK, // for kicking out a client
+    K_ACK,
+    K_NAK,
     GIVEADMIN // for giving administration to another
+    G_ACK,
+    G_NAK
 };
 
 //the structure for messages in the conference lab
