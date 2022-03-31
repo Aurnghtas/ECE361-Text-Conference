@@ -37,8 +37,12 @@ bool logged_in = false; // whether the client logs in or not
 char curr_ID[100]; // current client who is using the program
 pthread_t receive_thread;
 
+/*****************************************
+ * Detects if the user input Control + C *
+ *****************************************/
 void controlCFunction(int sig) {
     printf("Program crashes! Terminating the program!\n");
+
     /* send logout Message to the server first */
     Message crash_msg;
     char crash_msg_buffer[MAX_MSG_TO_STRING]; // buffer for converting Message to strings
@@ -65,7 +69,6 @@ void controlCFunction(int sig) {
     close(socketfd);
     exit(0);
 }
-
 
 /*******************************************************
  *      this is the function run by a new thread       *
