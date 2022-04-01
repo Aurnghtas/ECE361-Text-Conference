@@ -260,7 +260,7 @@ void handle_message_type(Message* msg, int cFd){
         char *clientId = msg->source;
         //send to the specific client that's in some session
         for(int i = 0;i < 5;i++){
-            if(connected[i] && (strcmp(clients[i], clientId)!=0) && joined[i]){ //target in session
+            if(connected[i] && (strcmp(clients[i], clientId)==0) && joined[i]){ //target in session
                 strcpy(replyMsg.data, msg->data);
                 replyMsg.size = strlen(replyMsg.data);
                 strcpy(replyMsg.source, msg->source);
@@ -270,29 +270,31 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
-            }else if(connected[i] && (strcmp(clients[i], clientId)!=0) && !joined[i]){ //target not in session
-                const char breaker[2] = ":";
-                unsigned char true_data[MAX_DATA];
-                unsigned char sender[MAX_NAME];
-                strcpy(sender, strtok(msg->data, breaker));
-                strcpy(true_data, strtok(NULL, "\n"));
-                int sendingid = -1;
-                for(int i = 0;i < 5;i++){
-                    if(strcmp(sender, clients[i]) == 0){
-                        sendingid = i;
-                        break;
-                    }
-                }
+            }else if(connected[i] && (strcmp(clients[i], clientId)==0) && !joined[i]){ //target not in session
+                // const char breaker[2] = ":";
+                // unsigned char true_data[MAX_DATA];
+                // unsigned char sender[MAX_NAME];
+                // strcpy(sender, strtok(msg->data, breaker));
+                // strcpy(true_data, strtok(NULL, "\n"));
+                // int sendingid = -1;
+                // for(int i = 0;i < 5;i++){
+                //     if(strcmp(sender, clients[i]) == 0){
+                //         sendingid = i;
+                //         break;
+                //     }
+                // }
 
                 strcpy(replyMsg.data, msg->data);
                 replyMsg.size = strlen(replyMsg.data);
                 strcpy(replyMsg.source, msg->source);
                 replyMsg.type = P_NAK;
                 messageToStrings(replyMsg, reply_buffer);
-                if(send(sendingid, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                printf("Line 292: \n");
+                if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
+                printf("Line 297: \n");
             }
         }
     }else if(Type == KICK){
