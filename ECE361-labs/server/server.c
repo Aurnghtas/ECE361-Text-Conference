@@ -272,6 +272,7 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
+                break;
             }else if(connected[i] && (strcmp(clients[i], clientId)==0) && !joined[i]){ //target not in session
                 // const char breaker[2] = ":";
                 // unsigned char true_data[MAX_DATA];
@@ -295,6 +296,7 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
+                break;
             }
         }
     }else if(Type == KICK){
@@ -336,6 +338,7 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
+                break;
             }else if(connected[i] && (!joined[i] || (strcmp(joined[i], wantedsession)!=0)) && 
                 (strcmp(clients[i], clientId)==0) && admin[sendid]){
                 //the target not in session or not in same session
@@ -351,6 +354,7 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
+                break;
             }else if(connected[i] && !admin[sendid] && joined[i] && (strcmp(joined[i], wantedsession)==0) &&
                 (strcmp(clients[i], clientId)==0)){
                 //the sender not administor
@@ -366,6 +370,7 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
+                break;
             }
         }
     }else if(Type == GIVEADMIN){
@@ -408,6 +413,7 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
+                break;
             }else if(connected[i] && (!joined[i] || (strcmp(joined[i], wantedsession)!=0)) &&
                 (strcmp(clients[i], clientId)==0) && admin[sendid]){
                 //found the one that want to give admin to is not in session or not in same session
@@ -423,6 +429,7 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
+                break;
             }else if(!admin[sendid] && connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) &&
                 (strcmp(clients[i], clientId)==0)){
                 //found the one that want to give admin to is not in session or not in same session
@@ -438,6 +445,7 @@ void handle_message_type(Message* msg, int cFd){
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }
+                break;
             }
         }
     }
