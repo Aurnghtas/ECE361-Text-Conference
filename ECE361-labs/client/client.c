@@ -25,6 +25,9 @@ const char *leavesession = "/leavesession";
 const char *createsession = "/createsession";
 const char *list = "/list";
 const char *quit = "/quit";
+const char *private = "/private"; // additional feature - private messaging
+const char *kick = "/kick"; // additional feature - session admins
+const char *giveadmin = "/giveadmin"; // additional feature - session admins
 
 /********************
  * Global Variables *
@@ -34,7 +37,7 @@ char curr_session[100]; // current session the client is in
 volatile sig_atomic_t flag = 0;
 int socketfd = -2;
 bool logged_in = false; // whether the client logs in or not
-char curr_ID[100]; // current client who is using the program
+char curr_ID[500]; // current client who is using the program
 pthread_t receive_thread;
 
 /*****************************************
@@ -121,6 +124,30 @@ void *receive_thread_start(void *fd) {
         else if(recv_msg_2.type==QU_ACK) {
             printf("Following are the users and sessions online\n");
             printf("%s\n", recv_msg_2.data);
+        }
+
+        else if(recv_msg_2.type==P_ACK) {
+            printf("%s\n", recv_msg_2.data);
+        }
+
+        else if(recv_msg_2.type==P_NAK) {
+            printf("The private message can NOT be delivered. The receiver is offline\n");
+        }
+
+        else if(recv_msg_2.type==K_ACK) {
+            printf("%s\n", recv_msg_2.data);
+        }
+
+        else if(recv_msg_2.type==K_NAK) {
+            printf("Failed to kick the desired client\n");
+        }
+
+        else if(recv_msg_2.type==G_ACK) {
+            printf("%s\n", recv_msg_2.data);
+        }
+
+        else if(recv_msg_2.type==G_NAK) {
+            printf("Failed to give the admin to the desired client\n");
         }
 
         else {
@@ -397,7 +424,6 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-
             msg.type = QUERY;
             strcpy(msg.source, " \0");
             strcpy(msg.data, " \0");
@@ -444,6 +470,130 @@ int main(int argc, char *argv[]) {
             close(socketfd);
             break;
         } 
+
+        /***************************************************************************
+         * private command - send direct message to anyone connects to any session *
+         ***************************************************************************/
+        else if(strcmp(command, private)==0) {
+            if(logged_in==false) {
+                printf("Please log in first before sending messages\n");
+                continue;
+            } 
+
+            if(in_session==false) {
+                printf("Please join a session first before sending messages\n");
+                continue;
+            }
+
+            char *receiver, *direct_message;
+
+            /* invalid usage of private */
+            if((receiver = strtok(NULL, " "))==NULL){
+                printf("Usage for private: /private <receiver> <message>\n");
+                continue;
+            }
+            if((direct_message = strtok(NULL, " "))==NULL){
+                printf("Usage for private: /private <receiver> <message>\n");
+                continue;
+            }
+
+            if(strcmp(curr_ID, receiver)==0) {
+                printf("Not allowed to send message to yourself!\n");
+                continue;
+            }
+
+            msg.type = P_MESSAGE;
+            strcpy(msg.source, receiver);
+            strcat(curr_ID, ":");
+            strcat(curr_ID, direct_message);
+            strcpy(msg.data, curr_ID);
+            msg.size = strlen(msg.data);       
+            messageToStrings(msg, msg_buffer);
+
+            if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
+                printf("Error in sending the private Message to the server\n");
+                continue;
+            }
+
+        }
+
+        /**************************************************
+         * kick command - kick someone out of the session *
+         **************************************************/
+        else if(strcmp(command, kick)==0) {
+            if(logged_in==false) {
+                printf("Please log in first before kicking others\n");
+                continue;
+            } 
+
+            if(in_session==false) {
+                printf("Please be in a session first before kicking others\n");
+                continue;
+            }
+
+            char *target;
+
+            /* invalid usage of kick */
+            if((target = strtok(NULL, " "))==NULL){
+                printf("Usage for kick: /kick <name>\n");
+                continue;
+            }
+
+            if(strcmp(curr_ID, target)==0) {
+                printf("You can NOT kick yourself\n");
+            } 
+
+            msg.type = KICK;
+            strcpy(msg.source, curr_ID);
+            strcpy(msg.data, target);
+            msg.size = strlen(msg.data);       
+            messageToStrings(msg, msg_buffer);
+
+            if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
+                printf("Error in sending the kick Message to the server\n");
+                continue;
+            }
+
+        }
+
+        /*********************
+         * giveadmin command *
+         *********************/
+        else if(strcmp(command, giveadmin)==0) {
+            if(logged_in==false) {
+                printf("Please log in first before giving admin\n");
+                continue;
+            } 
+
+            if(in_session==false) {
+                printf("Please be in a session first before giving admin\n");
+                continue;
+            }
+
+            char *target;
+
+            /* invalid usage of kick */
+            if((target = strtok(NULL, " "))==NULL){
+                printf("Usage for kick: /kick <name>\n");
+                continue;
+            }
+
+            if(strcmp(curr_ID, target)==0) {
+                printf("You can NOT give admin to yourself\n");
+            } 
+
+            msg.type = GIVEADMIN;
+            strcpy(msg.source, curr_ID);
+            strcpy(msg.data, target);
+            msg.size = strlen(msg.data);       
+            messageToStrings(msg, msg_buffer);
+
+            if(send(socketfd, msg_buffer, strlen(msg_buffer), 0)==-1){
+                printf("Error in sending the giveadmin Message to the server\n");
+                continue;
+            }
+
+        }
 
         /************************
          * text - not a command *
