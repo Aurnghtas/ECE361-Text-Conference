@@ -131,15 +131,16 @@ void *receive_thread_start(void *fd) {
         }
 
         else if(recv_msg_2.type==P_NAK) {
-            printf("The private message can NOT be delivered. The receiver is offline\n");
+            printf("The private message can NOT be delivered. The receiver is NOT connected in any session\n");
         }
 
         else if(recv_msg_2.type==K_ACK) {
+            in_session = false;
             printf("%s\n", recv_msg_2.data);
         }
 
         else if(recv_msg_2.type==K_NAK) {
-            printf("Failed to kick the desired client\n");
+            printf("%s\n", recv_msg_2.data);
         }
 
         else if(recv_msg_2.type==G_ACK) {
@@ -147,7 +148,7 @@ void *receive_thread_start(void *fd) {
         }
 
         else if(recv_msg_2.type==G_NAK) {
-            printf("Failed to give the admin to the desired client\n");
+            printf("%s\n", recv_msg_2.data);
         }
 
         else {
@@ -492,7 +493,7 @@ int main(int argc, char *argv[]) {
                 printf("Usage for private: /private <receiver> <message>\n");
                 continue;
             }
-            if((direct_message = strtok(NULL, " "))==NULL){
+            if((direct_message = strtok(NULL, "\n"))==NULL){
                 printf("Usage for private: /private <receiver> <message>\n");
                 continue;
             }
@@ -534,13 +535,14 @@ int main(int argc, char *argv[]) {
             char *target;
 
             /* invalid usage of kick */
-            if((target = strtok(NULL, " "))==NULL){
+            if((target = strtok(NULL, "\n"))==NULL){
                 printf("Usage for kick: /kick <name>\n");
                 continue;
             }
 
             if(strcmp(curr_ID, target)==0) {
                 printf("You can NOT kick yourself\n");
+                continue;
             } 
 
             msg.type = KICK;
@@ -573,13 +575,14 @@ int main(int argc, char *argv[]) {
             char *target;
 
             /* invalid usage of kick */
-            if((target = strtok(NULL, " "))==NULL){
+            if((target = strtok(NULL, "\n"))==NULL){
                 printf("Usage for kick: /kick <name>\n");
                 continue;
             }
 
             if(strcmp(curr_ID, target)==0) {
                 printf("You can NOT give admin to yourself\n");
+                continue;
             } 
 
             msg.type = GIVEADMIN;
