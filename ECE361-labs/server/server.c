@@ -304,20 +304,13 @@ void handle_message_type(Message* msg, int cFd){
         char wantedsession[100];
 
         int sendid = -1;
-        for(int i = 0;i < 5;i++){
+         for(int i = 0;i < 5;i++){
             if(clientFds[i] == cFd){
                 sendid = i;
                 break;
             }
         }
-
-        //first, find out which session the admin is in
-        for(int i = 0;i < 5;i++){
-            if(connected[i] && strcmp(clients[sendid], clientId) == 0){
-                strcpy(wantedsession, joined[sendid]);
-                break;
-            }
-        }
+        strcpy(wantedsession, joined[sendid]);
 
         //send to all clients in this session
         for(int i = 0;i < 5;i++){

@@ -503,11 +503,14 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
+            char client_ID[500];
+            strcpy(client_ID, curr_ID); // save client_ID in curr_ID for future reference
+
             msg.type = P_MESSAGE;
             strcpy(msg.source, receiver);
-            strcat(curr_ID, ":");
-            strcat(curr_ID, direct_message);
-            strcpy(msg.data, curr_ID);
+            strcat(client_ID, ":");
+            strcat(client_ID, direct_message);
+            strcpy(msg.data, client_ID);
             msg.size = strlen(msg.data);       
             messageToStrings(msg, msg_buffer);
 
