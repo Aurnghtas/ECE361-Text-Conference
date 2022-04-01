@@ -242,8 +242,10 @@ void handle_message_type(Message* msg, int cFd){
             if(connected[i]){
                 if(joined[i] == NULL){
                     sprintf(replydata, "%s%s-No Session||",replydata, clients[i]);
-                }else{
+                }else if(joined[i] && !admin[i]){
                     sprintf(replydata, "%s%s-%s||", replydata, clients[i], joined[i]);
+                }else if(joined[i] && admin[i]){
+                    sprintf(replydata, "%s%s-%s-admin||", replydata, clients[i], joined[i]);
                 }
             }
         }
@@ -307,10 +309,19 @@ void handle_message_type(Message* msg, int cFd){
                 break;
             }
         }
+        int sendid = -1;
+        for(int i = 0;i < 5;i++){
+            if(clientFds[i] == cFd){
+                sendid = i;
+                break;
+            }
+        }
+
         //send to all clients in this session
         for(int i = 0;i < 5;i++){
-            if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) && (strcmp(clients[i], clientId)!=0)){
-                //found the one that want to kick out
+            if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) &&
+                (strcmp(clients[i], clientId)!=0) && admin[sendid]){
+                //found the one that want to kick out and sender is admin
                 joined[i] = NULL;
 
                 char replydata[MAX_MSG_TO_STRING];
@@ -326,11 +337,26 @@ void handle_message_type(Message* msg, int cFd){
                     exit(1);
                 }
             }else if(connected[i] && (!joined[i] || (strcmp(joined[i], wantedsession)!=0)) && 
-                (strcmp(clients[i], clientId)!=0)){
+                (strcmp(clients[i], clientId)!=0) && admin[sendid]){
                 //the target not in session or not in same session
-                /*char replydata[MAX_MSG_TO_STRING];
+                char replydata[MAX_MSG_TO_STRING];
                 memset(replydata, 0, sizeof(replydata));
-                sprintf(replydata, "Successfully kicked out %s", clientId);*/
+                sprintf(replydata, "Failed to kick out %s, because that client is not in the same session with you or is not in any session\n", clientId);
+                strcpy(replyMsg.data, msg->data);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = K_NAK;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+            }else if(connected[i] && !admin[sendid] && joined[i] && (strcmp(joined[i], wantedsession)==0) &&
+                (strcmp(clients[i], clientId)!=0)){
+                //the sender not administor
+                char replydata[MAX_MSG_TO_STRING];
+                memset(replydata, 0, sizeof(replydata));
+                sprintf(replydata, "Failed to kicked out %s, because you are not administrator", clientId);
                 strcpy(replyMsg.data, msg->data);
                 replyMsg.size = strlen(replyMsg.data);
                 strcpy(replyMsg.source, msg->source);
@@ -352,18 +378,20 @@ void handle_message_type(Message* msg, int cFd){
                 break;
             }
         }
+        int sendid = -1;
+        for(int i = 0;i < 5;i++){
+            if(clientFds[i] == cFd){
+                sendid = i;
+                break;
+            }
+        }
+
         //send to all clients in this session
         for(int i = 0;i < 5;i++){
-            if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) && (strcmp(clients[i], clientId)!=0)){
+            if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) && 
+            (strcmp(clients[i], clientId)!=0) && admin[sendid]){
                 //found the one that want to give admin to
                 admin[i] = true;
-                int sendid = -1;
-                for(int i = 0;i < 5;i++){
-                    if(clientFds[i] == cFd){
-                        sendid = i;
-                        break;
-                    }
-                }
                 admin[sendid] = false;
 
                 char replydata[MAX_MSG_TO_STRING];
@@ -379,11 +407,26 @@ void handle_message_type(Message* msg, int cFd){
                     exit(1);
                 }
             }else if(connected[i] && (!joined[i] || (strcmp(joined[i], wantedsession)!=0)) &&
+                (strcmp(clients[i], clientId)!=0) && admin[sendid]){
+                //found the one that want to give admin to is not in session or not in same session
+                char replydata[MAX_MSG_TO_STRING];
+                memset(replydata, 0, sizeof(replydata));
+                sprintf(replydata, "Failed to give admin to %s, since that client not in your same session or is not in session at all", clientId);
+                strcpy(replyMsg.data, msg->data);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = G_NAK;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+            }else if(!admin[sendid] && connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) &&
                 (strcmp(clients[i], clientId)!=0)){
                 //found the one that want to give admin to is not in session or not in same session
-                /*char replydata[MAX_MSG_TO_STRING];
+                char replydata[MAX_MSG_TO_STRING];
                 memset(replydata, 0, sizeof(replydata));
-                sprintf(replydata, "Successfully give admin to %s", clientId);*/
+                sprintf(replydata, "Failed to give admin to %s, since you are not the administrator", clientId);
                 strcpy(replyMsg.data, msg->data);
                 replyMsg.size = strlen(replyMsg.data);
                 strcpy(replyMsg.source, msg->source);
