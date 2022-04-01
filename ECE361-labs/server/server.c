@@ -19,6 +19,7 @@ const char* passwords[] = {"123", "234", "345", "456", "567"}; //corresponding c
 bool connected[] = {false, false, false, false, false}; 
 int clientFds[] = {-1, -1, -1, -1, -1}; //record the corresponding client fds
 char *joined[] = {NULL, NULL, NULL, NULL, NULL}; //points to the session the client joins, NULL for not joining any
+bool admin[] = {false, false, false, false, false}; //indicate whether the corresponding client is an administrator
 char strnew[5][100];
 
 //this is the helper function that checks the type of command recieved and do corresponding things
@@ -160,6 +161,7 @@ void handle_message_type(Message* msg, int cFd){
             if(strcmp(clients[i], clientId) == 0){
                 if(joined[i]){
                     joined[i] = NULL;
+                    admin[i] = false;
                 }
             }
         }
@@ -191,9 +193,10 @@ void handle_message_type(Message* msg, int cFd){
         for(int i = 0;i < 5;i++){
             //find the client to start new session
             if(strcmp(clients[i], clientId) == 0){
-                //if session does not exit yet
+                //if session does not exist yet
                 if(joined[i] == NULL){
                     joined[i] = strnew[i];
+                    admin[i] = true; //set to administrator
                     strcpy(joined[i], sessionId);
                     char* replydata = ("Created new session %s!", sessionId);
                     strcpy(replyMsg.data, replydata);
@@ -268,12 +271,123 @@ void handle_message_type(Message* msg, int cFd){
                     exit(1);
                 }
             }else if(connected[i] && (strcmp(clients[i], clientId)!=0) && !joined[i]){ //target not in session
+                const char breaker[2] = ":";
+                unsigned char true_data[MAX_DATA];
+                unsigned char sender[MAX_NAME];
+                strcpy(sender, strtok(msg->data, breaker));
+                strcpy(true_data, strtok(NULL, "\n"));
+                int sendingid = -1;
+                for(int i = 0;i < 5;i++){
+                    if(strcmp(sender, clients[i]) == 0){
+                        sendingid = i;
+                        break;
+                    }
+                }
+
                 strcpy(replyMsg.data, msg->data);
                 replyMsg.size = strlen(replyMsg.data);
                 strcpy(replyMsg.source, msg->source);
                 replyMsg.type = P_NAK;
                 messageToStrings(replyMsg, reply_buffer);
-                if(send(clientFds[i], reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                if(send(sendingid, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+            }
+        }
+    }else if(Type == KICK){
+        char *clientId = msg->data; // clientId being the one kicked
+        char wantedsession[100];
+        //first, find out which session the admin is in
+        for(int i = 0;i < 5;i++){
+            if(connected[i] && strcmp(clients[i], clientId) == 0){
+                strcpy(wantedsession, joined[i]);
+                break;
+            }
+        }
+        //send to all clients in this session
+        for(int i = 0;i < 5;i++){
+            if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) && (strcmp(clients[i], clientId)!=0)){
+                //found the one that want to kick out
+                joined[i] = NULL;
+
+                char replydata[MAX_MSG_TO_STRING];
+                memset(replydata, 0, sizeof(replydata));
+                sprintf(replydata, "Successfully kicked out %s", clientId);
+                strcpy(replyMsg.data, replydata);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = K_ACK;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+            }else if(connected[i] && (!joined[i] || (strcmp(joined[i], wantedsession)!=0)) && 
+                (strcmp(clients[i], clientId)!=0)){
+                //the target not in session or not in same session
+                /*char replydata[MAX_MSG_TO_STRING];
+                memset(replydata, 0, sizeof(replydata));
+                sprintf(replydata, "Successfully kicked out %s", clientId);*/
+                strcpy(replyMsg.data, msg->data);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = K_NAK;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+            }
+        }
+    }else if(Type == GIVEADMIN){
+        char *clientId = msg->data; // clientId being the one kicked
+        char wantedsession[100];
+        //first, find out which session the admin is in
+        for(int i = 0;i < 5;i++){
+            if(connected[i] && strcmp(clients[i], clientId) == 0){
+                strcpy(wantedsession, joined[i]);
+                break;
+            }
+        }
+        //send to all clients in this session
+        for(int i = 0;i < 5;i++){
+            if(connected[i] && joined[i] && (strcmp(joined[i], wantedsession)==0) && (strcmp(clients[i], clientId)!=0)){
+                //found the one that want to give admin to
+                admin[i] = true;
+                int sendid = -1;
+                for(int i = 0;i < 5;i++){
+                    if(clientFds[i] == cFd){
+                        sendid = i;
+                        break;
+                    }
+                }
+                admin[sendid] = false;
+
+                char replydata[MAX_MSG_TO_STRING];
+                memset(replydata, 0, sizeof(replydata));
+                sprintf(replydata, "Successfully give admin to %s", clientId);
+                strcpy(replyMsg.data, replydata);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = G_ACK;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
+                    printf("Error in sending the Message to the client\n");
+                    exit(1);
+                }
+            }else if(connected[i] && (!joined[i] || (strcmp(joined[i], wantedsession)!=0)) &&
+                (strcmp(clients[i], clientId)!=0)){
+                //found the one that want to give admin to is not in session or not in same session
+                /*char replydata[MAX_MSG_TO_STRING];
+                memset(replydata, 0, sizeof(replydata));
+                sprintf(replydata, "Successfully give admin to %s", clientId);*/
+                strcpy(replyMsg.data, msg->data);
+                replyMsg.size = strlen(replyMsg.data);
+                strcpy(replyMsg.source, msg->source);
+                replyMsg.type = G_NAK;
+                messageToStrings(replyMsg, reply_buffer);
+                if(send(cFd, reply_buffer, strlen(reply_buffer) + 1, 0) == -1){ //+1 needed?
                     printf("Error in sending the Message to the client\n");
                     exit(1);
                 }

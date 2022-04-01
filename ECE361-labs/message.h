@@ -30,9 +30,9 @@ enum messageType{
     KICK, // for kicking out a client
     K_ACK,
     K_NAK,
-    GIVEADMIN // for giving administration to another
+    GIVEADMIN, // for giving administration to another
     G_ACK,
-    G_NAK
+    G_NAK,
 };
 
 //the structure for messages in the conference lab
